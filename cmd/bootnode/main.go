@@ -46,9 +46,8 @@ func main() {
 		runv5       = flag.Bool("v5", false, "run a v5 topic discovery bootnode")
 		verbosity   = flag.Int("verbosity", int(log.LvlInfo), "log verbosity (0-5)")
 		vmodule     = flag.String("vmodule", "", "log verbosity pattern")
-
-		nodeKey *ecdsa.PrivateKey
-		err     error
+		nodeKey     *ecdsa.PrivateKey
+		err         error
 	)
 	flag.Parse()
 

@@ -128,7 +128,7 @@ var (
 	RewardFlag = &cli.Int64Flag{
 		Name:  "state.reward",
 		Usage: "Mining reward. Set to -1 to disable",
-		Value: 0,
+		Value: -1,
 	}
 	ChainIDFlag = &cli.Int64Flag{
 		Name:  "state.chainid",
