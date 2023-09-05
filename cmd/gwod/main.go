@@ -39,6 +39,7 @@ import (
 	"wodchain/log"
 	"wodchain/metrics"
 	"wodchain/node"
+
 	"go.uber.org/automaxprocs/maxprocs"
 
 	// Force-load the tracer engines to trigger registration
@@ -197,12 +198,12 @@ var (
 	}
 )
 
-var app = flags.NewApp("the go-ethereum command line interface")
+var app = flags.NewApp("the go-wodchain command line interface")
 
 func init() {
 	// Initialize the CLI app and start Geth
 	app.Action = geth
-	app.Copyright = "Copyright 2013-2023 The go-ethereum Authors"
+	app.Copyright = "Copyright 2013-2023 The go-ethereum Authors\r\nCopyright 2023 The go-wodhain Authors"
 	app.Commands = []*cli.Command{
 		// See chaincmd.go:
 		initCommand,
