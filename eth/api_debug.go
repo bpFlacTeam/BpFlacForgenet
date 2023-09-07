@@ -27,7 +27,6 @@ import (
 	"wodchain/core/rawdb"
 	"wodchain/core/state"
 	"wodchain/core/types"
-	"wodchain/crypto"
 	"wodchain/internal/ethapi"
 	"wodchain/log"
 	"wodchain/rlp"
@@ -217,6 +216,7 @@ func (api *DebugAPI) StorageRangeAt(ctx context.Context, blockNrOrHash rpc.Block
 	if err != nil {
 		return StorageRangeResult{}, err
 	}
+
 	if block == nil {
 		return StorageRangeResult{}, fmt.Errorf("block %v not found", blockNrOrHash)
 	}
@@ -226,20 +226,18 @@ func (api *DebugAPI) StorageRangeAt(ctx context.Context, blockNrOrHash rpc.Block
 	}
 	defer release()
 
-	return storageRangeAt(statedb, block.Root(), contractAddress, keyStart, maxResult)
-}
-
-func storageRangeAt(statedb *state.StateDB, root common.Hash, address common.Address, start []byte, maxResult int) (StorageRangeResult, error) {
-	storageRoot := statedb.GetStorageRoot(address)
-	if storageRoot == types.EmptyRootHash || storageRoot == (common.Hash{}) {
-		return StorageRangeResult{}, nil // empty storage
-	}
-	id := trie.StorageTrieID(root, crypto.Keccak256Hash(address.Bytes()), storageRoot)
-	tr, err := trie.NewStateTrie(id, statedb.Database().TrieDB())
+	st, err := statedb.StorageTrie(contractAddress)
 	if err != nil {
 		return StorageRangeResult{}, err
 	}
-	trieIt, err := tr.NodeIterator(start)
+	if st == nil {
+		return StorageRangeResult{}, fmt.Errorf("account %x doesn't exist", contractAddress)
+	}
+	return storageRangeAt(st, keyStart, maxResult)
+}
+
+func storageRangeAt(st state.Trie, start []byte, maxResult int) (StorageRangeResult, error) {
+	trieIt, err := st.NodeIterator(start)
 	if err != nil {
 		return StorageRangeResult{}, err
 	}
@@ -251,7 +249,7 @@ func storageRangeAt(statedb *state.StateDB, root common.Hash, address common.Add
 			return StorageRangeResult{}, err
 		}
 		e := storageEntry{Value: common.BytesToHash(content)}
-		if preimage := tr.GetKey(it.Key); preimage != nil {
+		if preimage := st.GetKey(it.Key); preimage != nil {
 			preimage := common.BytesToHash(preimage)
 			e.Key = &preimage
 		}
@@ -324,7 +322,7 @@ func (api *DebugAPI) getModifiedAccounts(startBlock, endBlock *types.Block) ([]c
 	if startBlock.Number().Uint64() >= endBlock.Number().Uint64() {
 		return nil, fmt.Errorf("start block height (%d) must be less than end block height (%d)", startBlock.Number().Uint64(), endBlock.Number().Uint64())
 	}
-	triedb := api.eth.BlockChain().TrieDB()
+	triedb := api.eth.BlockChain().StateCache().TrieDB()
 
 	oldTrie, err := trie.NewStateTrie(trie.StateTrieID(startBlock.Root()), triedb)
 	if err != nil {

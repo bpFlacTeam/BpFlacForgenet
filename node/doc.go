@@ -36,7 +36,7 @@ and CLOSED.
 	    Close()             RUNNING
 	        │                  │
 	        ▼                  │
-	     CLOSED ──────Close()─┘
+	     CLOSED ◀──────Close()─┘
 
 Creating a Node allocates basic resources such as the data directory and returns the node
 in its INITIALIZING state. Lifecycle objects, RPC APIs and peer-to-peer networking

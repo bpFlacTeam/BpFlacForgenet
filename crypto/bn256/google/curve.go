@@ -8,8 +8,8 @@ import (
 	"math/big"
 )
 
-// curvePoint implements the elliptic curve y^2=x^3+3. Points are kept in
-// Jacobian form and t=z^2 when valid. G is the set of points of this curve on
+// curvePoint implements the elliptic curve y²=x³+3. Points are kept in
+// Jacobian form and t=z² when valid. G₁ is the set of points of this curve on
 // GF(p).
 type curvePoint struct {
 	x, y, z, t *big.Int
@@ -17,7 +17,7 @@ type curvePoint struct {
 
 var curveB = new(big.Int).SetInt64(3)
 
-// curveGen is the generator of G.
+// curveGen is the generator of G₁.
 var curveGen = &curvePoint{
 	new(big.Int).SetInt64(1),
 	new(big.Int).SetInt64(2),
@@ -88,7 +88,7 @@ func (c *curvePoint) Add(a, b *curvePoint, pool *bnPool) {
 
 	// Normalize the points by replacing a = [x1:y1:z1] and b = [x2:y2:z2]
 	// by [u1:s1:z1·z2] and [u2:s2:z1·z2]
-	// where u1 = x1·z2^2, s1 = y1·z2^3 and u1 = x2·z1^2, s2 = y2·z1^3
+	// where u1 = x1·z2², s1 = y1·z2³ and u1 = x2·z1², s2 = y2·z1³
 	z1z1 := pool.Get().Mul(a.z, a.z)
 	z1z1.Mod(z1z1, P)
 	z2z2 := pool.Get().Mul(b.z, b.z)
@@ -108,21 +108,21 @@ func (c *curvePoint) Add(a, b *curvePoint, pool *bnPool) {
 	s2 := pool.Get().Mul(b.y, t)
 	s2.Mod(s2, P)
 
-	// Compute x = (2h)^2(s^2-u1-u2)
+	// Compute x = (2h)²(s²-u1-u2)
 	// where s = (s2-s1)/(u2-u1) is the slope of the line through
 	// (u1,s1) and (u2,s2). The extra factor 2h = 2(u2-u1) comes from the value of z below.
 	// This is also:
-	// 4(s2-s1)^2 - 4h^2(u1+u2) = 4(s2-s1)^2 - 4h^3 - 4h^2(2u1)
-	//                        = r^2 - j - 2v
+	// 4(s2-s1)² - 4h²(u1+u2) = 4(s2-s1)² - 4h³ - 4h²(2u1)
+	//                        = r² - j - 2v
 	// with the notations below.
 	h := pool.Get().Sub(u2, u1)
 	xEqual := h.Sign() == 0
 
 	t.Add(h, h)
-	// i = 4h^2
+	// i = 4h²
 	i := pool.Get().Mul(t, t)
 	i.Mod(i, P)
-	// j = 4h^3
+	// j = 4h³
 	j := pool.Get().Mul(h, i)
 	j.Mod(j, P)
 
@@ -137,14 +137,14 @@ func (c *curvePoint) Add(a, b *curvePoint, pool *bnPool) {
 	v := pool.Get().Mul(u1, i)
 	v.Mod(v, P)
 
-	// t4 = 4(s2-s1)^2
+	// t4 = 4(s2-s1)²
 	t4 := pool.Get().Mul(r, r)
 	t4.Mod(t4, P)
 	t.Add(v, v)
 	t6 := pool.Get().Sub(t4, j)
 	c.x.Sub(t6, t)
 
-	// Set y = -(2h)^3(s1 + s*(x/4h^2-u1))
+	// Set y = -(2h)³(s1 + s*(x/4h²-u1))
 	// This is also
 	// y = - 2·s1·j - (s2-s1)(2x - 2i·u1) = r(v-x) - 2·s1·j
 	t.Sub(v, c.x) // t7

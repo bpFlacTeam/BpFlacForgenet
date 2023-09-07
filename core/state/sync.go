@@ -17,6 +17,8 @@
 package state
 
 import (
+	"bytes"
+
 	"wodchain/common"
 	"wodchain/core/types"
 	"wodchain/ethdb"
@@ -43,7 +45,7 @@ func NewStateSync(root common.Hash, database ethdb.KeyValueReader, onLeaf func(k
 			}
 		}
 		var obj types.StateAccount
-		if err := rlp.DecodeBytes(leaf, &obj); err != nil {
+		if err := rlp.Decode(bytes.NewReader(leaf), &obj); err != nil {
 			return err
 		}
 		syncer.AddSubTrie(obj.Root, path, parent, parentPath, onSlot)

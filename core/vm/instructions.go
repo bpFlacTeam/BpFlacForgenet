@@ -17,13 +17,10 @@
 package vm
 
 import (
-	"fmt"
 	"wodchain/common"
 	"wodchain/core/types"
 	"wodchain/crypto"
-	"wodchain/log"
 	"wodchain/params"
-
 	"github.com/holiman/uint256"
 )
 
@@ -684,8 +681,6 @@ func opCall(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byt
 	if !value.IsZero() {
 		gas += params.CallStipend
 		bigVal = value.ToBig()
-
-		log.Info(fmt.Sprintf("--%s Transfer To --%s:%s", scope.Contract.Address().Hex(), toAddr.Hex(), bigVal.String()))
 	}
 
 	ret, returnGas, err := interpreter.evm.Call(scope.Contract, toAddr, args, gas, bigVal)

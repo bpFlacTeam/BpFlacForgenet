@@ -63,7 +63,7 @@ func readBits(bigint *big.Int, buf []byte) {
 //
 // The curve methods, internally, on Jacobian coordinates. For a given
 // (x, y) position on the curve, the Jacobian coordinates are (x1, y1,
-// z1) where x = x1/z1^2 and y = y1/z1^3. The greatest speedups come
+// z1) where x = x1/z1² and y = y1/z1³. The greatest speedups come
 // when the whole calculation can be performed within the transform
 // (as in ScalarMult and ScalarBaseMult). But even for Add and Double,
 // it's faster to apply and reverse the transform than to operate in
@@ -92,15 +92,15 @@ func (BitCurve *BitCurve) Params() *elliptic.CurveParams {
 
 // IsOnCurve returns true if the given (x,y) lies on the BitCurve.
 func (BitCurve *BitCurve) IsOnCurve(x, y *big.Int) bool {
-	// y^2 = x^3 + b
-	y2 := new(big.Int).Mul(y, y) //y^2
-	y2.Mod(y2, BitCurve.P)       //y^2%P
+	// y² = x³ + b
+	y2 := new(big.Int).Mul(y, y) //y²
+	y2.Mod(y2, BitCurve.P)       //y²%P
 
-	x3 := new(big.Int).Mul(x, x) //x^2
-	x3.Mul(x3, x)                //x^3
+	x3 := new(big.Int).Mul(x, x) //x²
+	x3.Mul(x3, x)                //x³
 
-	x3.Add(x3, BitCurve.B) //x^3+B
-	x3.Mod(x3, BitCurve.P) //(x^3+B)%P
+	x3.Add(x3, BitCurve.B) //x³+B
+	x3.Mod(x3, BitCurve.P) //(x³+B)%P
 
 	return x3.Cmp(y2) == 0
 }
@@ -216,18 +216,18 @@ func (BitCurve *BitCurve) Double(x1, y1 *big.Int) (*big.Int, *big.Int) {
 func (BitCurve *BitCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
 	// See http://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
 
-	a := new(big.Int).Mul(x, x) //X1^2
-	b := new(big.Int).Mul(y, y) //Y1^2
-	c := new(big.Int).Mul(b, b) //B^2
+	a := new(big.Int).Mul(x, x) //X1²
+	b := new(big.Int).Mul(y, y) //Y1²
+	c := new(big.Int).Mul(b, b) //B²
 
 	d := new(big.Int).Add(x, b) //X1+B
-	d.Mul(d, d)                 //(X1+B)^2
-	d.Sub(d, a)                 //(X1+B)^2-A
-	d.Sub(d, c)                 //(X1+B)^2-A-C
-	d.Mul(d, big.NewInt(2))     //2*((X1+B)^2-A-C)
+	d.Mul(d, d)                 //(X1+B)²
+	d.Sub(d, a)                 //(X1+B)²-A
+	d.Sub(d, c)                 //(X1+B)²-A-C
+	d.Mul(d, big.NewInt(2))     //2*((X1+B)²-A-C)
 
 	e := new(big.Int).Mul(big.NewInt(3), a) //3*A
-	f := new(big.Int).Mul(e, e)             //E^2
+	f := new(big.Int).Mul(e, e)             //E²
 
 	x3 := new(big.Int).Mul(big.NewInt(2), d) //2*D
 	x3.Sub(f, x3)                            //F-2*D

@@ -1,4 +1,4 @@
-// Copyright 2021 The go-ethereum Authors # Copyright 2023 The go-wodchain Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -23,7 +23,6 @@ import (
 
 	"wodchain/common"
 	"wodchain/common/hexutil"
-
 	"github.com/holiman/uint256"
 )
 
@@ -374,20 +373,20 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		itx.BlobHashes = dec.BlobVersionedHashes
 
 		// signature R
-		var overflow bool
+		var ok bool
 		if dec.R == nil {
 			return errors.New("missing required field 'r' in transaction")
 		}
-		itx.R, overflow = uint256.FromBig((*big.Int)(dec.R))
-		if overflow {
+		itx.R, ok = uint256.FromBig((*big.Int)(dec.R))
+		if !ok {
 			return errors.New("'r' value overflows uint256")
 		}
 		// signature S
 		if dec.S == nil {
 			return errors.New("missing required field 's' in transaction")
 		}
-		itx.S, overflow = uint256.FromBig((*big.Int)(dec.S))
-		if overflow {
+		itx.S, ok = uint256.FromBig((*big.Int)(dec.S))
+		if !ok {
 			return errors.New("'s' value overflows uint256")
 		}
 		// signature V
@@ -395,8 +394,8 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		if err != nil {
 			return err
 		}
-		itx.V, overflow = uint256.FromBig(vbig)
-		if overflow {
+		itx.V, ok = uint256.FromBig(vbig)
+		if !ok {
 			return errors.New("'v' value overflows uint256")
 		}
 		if itx.V.Sign() != 0 || itx.R.Sign() != 0 || itx.S.Sign() != 0 {

@@ -3,7 +3,7 @@
 //
 // Bilinear groups are the basis of many of the new cryptographic protocols that
 // have been proposed over the past decade. They consist of a triplet of groups
-// (G, G and GT) such that there exists a function e(g,g)=gT (where g
+// (G₁, G₂ and GT) such that there exists a function e(g₁ˣ,g₂ʸ)=gTˣʸ (where gₓ
 // is a generator of the respective group). That function is called a pairing
 // function.
 //
@@ -40,7 +40,7 @@ type G1 struct {
 	p *curvePoint
 }
 
-// RandomG1 returns x and g where x is a random, non-zero number read from r.
+// RandomG1 returns x and g₁ˣ where x is a random, non-zero number read from r.
 func RandomG1(r io.Reader) (*big.Int, *G1, error) {
 	k, err := randomK(r)
 	if err != nil {
@@ -172,7 +172,7 @@ type G2 struct {
 	p *twistPoint
 }
 
-// RandomG2 returns x and g where x is a random, non-zero number read from r.
+// RandomG2 returns x and g₂ˣ where x is a random, non-zero number read from r.
 func RandomG2(r io.Reader) (*big.Int, *G2, error) {
 	k, err := randomK(r)
 	if err != nil {

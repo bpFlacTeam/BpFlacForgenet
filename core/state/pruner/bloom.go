@@ -1,4 +1,4 @@
-// Copyright 2021 The go-ethereum Authors # Copyright 2023 The go-wodchain Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -24,7 +24,6 @@ import (
 	"wodchain/common"
 	"wodchain/core/rawdb"
 	"wodchain/log"
-
 	bloomfilter "github.com/holiman/bloomfilter/v2"
 )
 

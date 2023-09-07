@@ -1,4 +1,4 @@
-// Copyright 2021 The go-ethereum Authors # Copyright 2023 The go-wodchain Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -88,8 +88,8 @@ func makechain() (bc *core.BlockChain, addresses []common.Address, txHashes []co
 }
 
 func makeTries() (chtTrie *trie.Trie, bloomTrie *trie.Trie, chtKeys, bloomKeys [][]byte) {
-	chtTrie = trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), trie.HashDefaults))
-	bloomTrie = trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), trie.HashDefaults))
+	chtTrie = trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase()))
+	bloomTrie = trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase()))
 	for i := 0; i < testChainLen; i++ {
 		// The element in CHT is <big-endian block number> -> <block hash>
 		key := make([]byte, 8)

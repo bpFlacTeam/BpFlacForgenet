@@ -16,10 +16,10 @@ func bigFromBase10(s string) *big.Int {
 // u is the BN parameter that determines the prime.
 var u = bigFromBase10("4965661367192848881")
 
-// P is a prime over which we form a basic field: 36u+36u^3+24u^2+6u+1.
+// P is a prime over which we form a basic field: 36u⁴+36u³+24u²+6u+1.
 var P = bigFromBase10("21888242871839275222246405745257275088696311157297823662689037894645226208583")
 
-// Order is the number of elements in both G and G: 36u+36u^3+18u^2+6u+1.
+// Order is the number of elements in both G₁ and G₂: 36u⁴+36u³+18u²+6u+1.
 // Needs to be highly 2-adic for efficient SNARK key and proof generation.
 // Order - 1 = 2^28 * 3^2 * 13 * 29 * 983 * 11003 * 237073 * 405928799 * 1670836401704629 * 13818364434197438864469338081.
 // Refer to https://eprint.iacr.org/2013/879.pdf and https://eprint.iacr.org/2013/507.pdf for more information on these parameters.
@@ -34,13 +34,13 @@ var xiToPMinus1Over3 = &gfP2{bigFromBase10("103076015958737097001522842738161122
 // xiToPMinus1Over2 is ξ^((p-1)/2) where ξ = i+9.
 var xiToPMinus1Over2 = &gfP2{bigFromBase10("3505843767911556378687030309984248845540243509899259641013678093033130930403"), bigFromBase10("2821565182194536844548159561693502659359617185244120367078079554186484126554")}
 
-// xiToPSquaredMinus1Over3 is ξ^((p^2-1)/3) where ξ = i+9.
+// xiToPSquaredMinus1Over3 is ξ^((p²-1)/3) where ξ = i+9.
 var xiToPSquaredMinus1Over3 = bigFromBase10("21888242871839275220042445260109153167277707414472061641714758635765020556616")
 
-// xiTo2PSquaredMinus2Over3 is ξ^((2p^2-2)/3) where ξ = i+9 (a cubic root of unity, mod p).
+// xiTo2PSquaredMinus2Over3 is ξ^((2p²-2)/3) where ξ = i+9 (a cubic root of unity, mod p).
 var xiTo2PSquaredMinus2Over3 = bigFromBase10("2203960485148121921418603742825762020974279258880205651966")
 
-// xiToPSquaredMinus1Over6 is ξ^((1p^2-1)/6) where ξ = i+9 (a cubic root of -1, mod p).
+// xiToPSquaredMinus1Over6 is ξ^((1p²-1)/6) where ξ = i+9 (a cubic root of -1, mod p).
 var xiToPSquaredMinus1Over6 = bigFromBase10("21888242871839275220042445260109153167277707414472061641714758635765020556617")
 
 // xiTo2PMinus2Over3 is ξ^((2p-2)/3) where ξ = i+9.

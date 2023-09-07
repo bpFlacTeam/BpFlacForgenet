@@ -4,9 +4,9 @@ import (
 	"math/big"
 )
 
-// twistPoint implements the elliptic curve y^2=x^3+3/ξ over GF(p^2). Points are
-// kept in Jacobian form and t=z^2 when valid. The group G is the set of
-// n-torsion points of this curve over GF(p^2) (where n = Order)
+// twistPoint implements the elliptic curve y²=x³+3/ξ over GF(p²). Points are
+// kept in Jacobian form and t=z² when valid. The group G₂ is the set of
+// n-torsion points of this curve over GF(p²) (where n = Order)
 type twistPoint struct {
 	x, y, z, t gfP2
 }
@@ -16,7 +16,7 @@ var twistB = &gfP2{
 	gfP{0x3bf938e377b802a8, 0x020b1b273633535d, 0x26b7edf049755260, 0x2514c6324384a86d},
 }
 
-// twistGen is the generator of group G.
+// twistGen is the generator of group G₂.
 var twistGen = &twistPoint{
 	gfP2{
 		gfP{0xafb4737da84c6140, 0x6043dd5a5802d8c4, 0x09e950fc52a02f86, 0x14fef0833aea7b6b},

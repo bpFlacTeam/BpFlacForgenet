@@ -12,8 +12,8 @@ import (
 	"math/big"
 )
 
-// gfP2 implements a field of size p^2 as a quadratic extension of the base
-// field where i^2=-1.
+// gfP2 implements a field of size p² as a quadratic extension of the base
+// field where i²=-1.
 type gfP2 struct {
 	x, y *big.Int // value is xi+y.
 }
@@ -173,7 +173,7 @@ func (e *gfP2) MulXi(a *gfP2, pool *bnPool) *gfP2 {
 
 func (e *gfP2) Square(a *gfP2, pool *bnPool) *gfP2 {
 	// Complex squaring algorithm:
-	// (xi+b)^2 = (x+y)(y-x) + 2*i*x*y
+	// (xi+b)² = (x+y)(y-x) + 2*i*x*y
 	t1 := pool.Get().Sub(a.y, a.x)
 	t2 := pool.Get().Add(a.x, a.y)
 	ty := pool.Get().Mul(t1, t2)

@@ -6,8 +6,8 @@
 //
 // Bilinear groups are the basis of many of the new cryptographic protocols
 // that have been proposed over the past decade. They consist of a triplet of
-// groups (G, G and GT) such that there exists a function e(g,g)=gT
-// (where g is a generator of the respective group). That function is called
+// groups (G₁, G₂ and GT) such that there exists a function e(g₁ˣ,g₂ʸ)=gTˣʸ
+// (where gₓ is a generator of the respective group). That function is called
 // a pairing function.
 //
 // This package specifically implements the Optimal Ate pairing over a 256-bit
@@ -29,7 +29,7 @@ import (
 )
 
 // BUG(agl): this implementation is not constant time.
-// TODO(agl): keep GF(p^2) elements in Mongomery form.
+// TODO(agl): keep GF(p²) elements in Mongomery form.
 
 // G1 is an abstract cyclic group. The zero value is suitable for use as the
 // output of an operation, but cannot be used as an input.
@@ -37,7 +37,7 @@ type G1 struct {
 	p *curvePoint
 }
 
-// RandomG1 returns x and g where x is a random, non-zero number read from r.
+// RandomG1 returns x and g₁ˣ where x is a random, non-zero number read from r.
 func RandomG1(r io.Reader) (*big.Int, *G1, error) {
 	var k *big.Int
 	var err error
@@ -166,7 +166,7 @@ type G2 struct {
 	p *twistPoint
 }
 
-// RandomG1 returns x and g where x is a random, non-zero number read from r.
+// RandomG1 returns x and g₂ˣ where x is a random, non-zero number read from r.
 func RandomG2(r io.Reader) (*big.Int, *G2, error) {
 	var k *big.Int
 	var err error

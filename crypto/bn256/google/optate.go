@@ -244,14 +244,14 @@ func miller(q *twistPoint, p *curvePoint, pool *bnPool) *gfP12 {
 	// to the full GF(p^12) group, apply the Frobenius there, and convert
 	// back.
 	//
-	// The twist isomorphism is (x', y') -> (xω^2, yω^3). If we consider just
-	// x for a moment, then after applying the Frobenius, we have xω^(2p)
-	// where x is the conjugate of x. If we are going to apply the inverse
-	// isomorphism we need a value with a single coefficient of ω^2 so we
-	// rewrite this as xω^(2p-2)ω^2. ξ = ω and, due to the construction of
+	// The twist isomorphism is (x', y') -> (xω², yω³). If we consider just
+	// x for a moment, then after applying the Frobenius, we have x̄ω^(2p)
+	// where x̄ is the conjugate of x. If we are going to apply the inverse
+	// isomorphism we need a value with a single coefficient of ω² so we
+	// rewrite this as x̄ω^(2p-2)ω². ξ⁶ = ω and, due to the construction of
 	// p, 2p-2 is a multiple of six. Therefore we can rewrite as
-	// xξ^((p-1)/3)ω^2 and applying the inverse isomorphism eliminates the
-	// ω^2.
+	// x̄ξ^((p-1)/3)ω² and applying the inverse isomorphism eliminates the
+	// ω².
 	//
 	// A similar argument can be made for the y value.
 
@@ -263,7 +263,7 @@ func miller(q *twistPoint, p *curvePoint, pool *bnPool) *gfP12 {
 	q1.z.SetOne()
 	q1.t.SetOne()
 
-	// For Q2 we are applying the p^2 Frobenius. The two conjugations cancel
+	// For Q2 we are applying the p² Frobenius. The two conjugations cancel
 	// out and we are left only with the factors from the isomorphism. In
 	// the case of x, we end up with a pure number which is why
 	// xiToPSquaredMinus1Over3 is ∈ GF(p). With y we get a factor of -1. We
@@ -302,8 +302,8 @@ func miller(q *twistPoint, p *curvePoint, pool *bnPool) *gfP12 {
 	return ret
 }
 
-// finalExponentiation computes the (p^1^2-1)/Order-th power of an element of
-// GF(p^1^2) to obtain an element of GT (steps 13-15 of algorithm 1 from
+// finalExponentiation computes the (p¹²-1)/Order-th power of an element of
+// GF(p¹²) to obtain an element of GT (steps 13-15 of algorithm 1 from
 // http://cryptojedi.org/papers/dclxvi-20100714.pdf)
 func finalExponentiation(in *gfP12, pool *bnPool) *gfP12 {
 	t1 := newGFp12(pool)

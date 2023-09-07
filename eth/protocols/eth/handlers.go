@@ -1,4 +1,4 @@
-// Copyright 2021 The go-ethereum Authors # Copyright 2023 The go-wodchain Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -22,7 +22,6 @@ import (
 
 	"wodchain/common"
 	"wodchain/core"
-	"wodchain/core/rawdb"
 	"wodchain/core/types"
 	"wodchain/log"
 	"wodchain/rlp"
@@ -247,10 +246,6 @@ func handleGetNodeData66(backend Backend, msg Decoder, peer *Peer) error {
 // ServiceGetNodeDataQuery assembles the response to a node data query. It is
 // exposed to allow external packages to test protocol behavior.
 func ServiceGetNodeDataQuery(chain *core.BlockChain, query GetNodeDataPacket) [][]byte {
-	// Request nodes by hash is not supported in path-based scheme.
-	if chain.TrieDB().Scheme() == rawdb.PathScheme {
-		return nil
-	}
 	// Gather state data until the fetch or network limits is reached
 	var (
 		bytes int
@@ -262,7 +257,7 @@ func ServiceGetNodeDataQuery(chain *core.BlockChain, query GetNodeDataPacket) []
 			break
 		}
 		// Retrieve the requested state entry
-		entry, err := chain.TrieDB().Node(hash)
+		entry, err := chain.TrieNode(hash)
 		if len(entry) == 0 || err != nil {
 			// Read the contract code with prefix only to save unnecessary lookups.
 			entry, err = chain.ContractCodeWithPrefix(hash)
@@ -503,7 +498,7 @@ func answerGetPooledTransactions(backend Backend, query GetPooledTransactionsPac
 			continue
 		}
 		// If known, encode and queue for response packet
-		if encoded, err := rlp.EncodeToBytes(tx); err != nil {
+		if encoded, err := rlp.EncodeToBytes(tx.Tx); err != nil {
 			log.Error("Failed to encode transaction", "err", err)
 		} else {
 			hashes = append(hashes, hash)

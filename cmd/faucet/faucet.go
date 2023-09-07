@@ -57,6 +57,7 @@ import (
 	"wodchain/p2p/enode"
 	"wodchain/p2p/nat"
 	"wodchain/params"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -458,7 +459,7 @@ func (f *faucet) apiHandler(w http.ResponseWriter, r *http.Request) {
 			id = username
 		default:
 			//lint:ignore ST1005 This error is to be displayed in the browser
-			err = errors.New("Something funky happened, please open an issue at https://github.com/ethereum/go-ethereum/issues")
+			err = errors.New("Something funky happened, please open an issue at https://wodchain/issues")
 		}
 		if err != nil {
 			if err = sendError(wsconn, err); err != nil {

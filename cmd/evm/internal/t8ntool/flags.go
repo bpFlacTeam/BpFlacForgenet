@@ -17,11 +17,6 @@
 package t8ntool
 
 import (
-	"fmt"
-	"strings"
-
-	"wodchain/core/vm"
-
 	"github.com/urfave/cli/v2"
 )
 
@@ -128,7 +123,7 @@ var (
 	RewardFlag = &cli.Int64Flag{
 		Name:  "state.reward",
 		Usage: "Mining reward. Set to -1 to disable",
-		Value: -1,
+		Value: 0,
 	}
 	ChainIDFlag = &cli.Int64Flag{
 		Name:  "state.chainid",
@@ -136,14 +131,8 @@ var (
 		Value: 1,
 	}
 	ForknameFlag = &cli.StringFlag{
-		Name: "state.fork",
-		Usage: fmt.Sprintf("Name of ruleset to use."+
-			"\n\tAvailable forknames:"+
-			"\n\t    %v"+
-			"\n\tAvailable extra eips:"+
-			"\n\t    %v"+
-			"\n\tSyntax <forkname>(+ExtraEip)",
-			strings.Join(vm.ActivateableEips(), ", ")),
+		Name:  "state.fork",
+		Usage: "",
 		Value: "GrayGlacier",
 	}
 	VerbosityFlag = &cli.IntFlag{

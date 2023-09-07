@@ -4,15 +4,15 @@ import (
 	"math/big"
 )
 
-// curvePoint implements the elliptic curve y^2=x^3+3. Points are kept in Jacobian
-// form and t=z^2 when valid. G is the set of points of this curve on GF(p).
+// curvePoint implements the elliptic curve y²=x³+3. Points are kept in Jacobian
+// form and t=z² when valid. G₁ is the set of points of this curve on GF(p).
 type curvePoint struct {
 	x, y, z, t gfP
 }
 
 var curveB = newGFp(3)
 
-// curveGen is the generator of G.
+// curveGen is the generator of G₁.
 var curveGen = &curvePoint{
 	x: *newGFp(1),
 	y: *newGFp(2),
@@ -76,7 +76,7 @@ func (c *curvePoint) Add(a, b *curvePoint) {
 
 	// Normalize the points by replacing a = [x1:y1:z1] and b = [x2:y2:z2]
 	// by [u1:s1:z1·z2] and [u2:s2:z1·z2]
-	// where u1 = x1·z2^2, s1 = y1·z2^3 and u1 = x2·z1^2, s2 = y2·z1^3
+	// where u1 = x1·z2², s1 = y1·z2³ and u1 = x2·z1², s2 = y2·z1³
 	z12, z22 := &gfP{}, &gfP{}
 	gfpMul(z12, &a.z, &a.z)
 	gfpMul(z22, &b.z, &b.z)
@@ -93,22 +93,22 @@ func (c *curvePoint) Add(a, b *curvePoint) {
 	gfpMul(t, &a.z, z12)
 	gfpMul(s2, &b.y, t)
 
-	// Compute x = (2h)^2(s^2-u1-u2)
+	// Compute x = (2h)²(s²-u1-u2)
 	// where s = (s2-s1)/(u2-u1) is the slope of the line through
 	// (u1,s1) and (u2,s2). The extra factor 2h = 2(u2-u1) comes from the value of z below.
 	// This is also:
-	// 4(s2-s1)^2 - 4h^2(u1+u2) = 4(s2-s1)^2 - 4h^3 - 4h^2(2u1)
-	//                        = r^2 - j - 2v
+	// 4(s2-s1)² - 4h²(u1+u2) = 4(s2-s1)² - 4h³ - 4h²(2u1)
+	//                        = r² - j - 2v
 	// with the notations below.
 	h := &gfP{}
 	gfpSub(h, u2, u1)
 	xEqual := *h == gfP{0}
 
 	gfpAdd(t, h, h)
-	// i = 4h^2
+	// i = 4h²
 	i := &gfP{}
 	gfpMul(i, t, t)
-	// j = 4h^3
+	// j = 4h³
 	j := &gfP{}
 	gfpMul(j, h, i)
 
@@ -124,7 +124,7 @@ func (c *curvePoint) Add(a, b *curvePoint) {
 	v := &gfP{}
 	gfpMul(v, u1, i)
 
-	// t4 = 4(s2-s1)^2
+	// t4 = 4(s2-s1)²
 	t4, t6 := &gfP{}, &gfP{}
 	gfpMul(t4, r, r)
 	gfpAdd(t, v, v)
@@ -132,7 +132,7 @@ func (c *curvePoint) Add(a, b *curvePoint) {
 
 	gfpSub(&c.x, t6, t)
 
-	// Set y = -(2h)^3(s1 + s*(x/4h^2-u1))
+	// Set y = -(2h)³(s1 + s*(x/4h²-u1))
 	// This is also
 	// y = - 2·s1·j - (s2-s1)(2x - 2i·u1) = r(v-x) - 2·s1·j
 	gfpSub(t, v, &c.x) // t7

@@ -8,8 +8,8 @@ import (
 	"math/big"
 )
 
-// gfP12 implements the field of size p^1^2 as a quadratic extension of gfP6
-// where ω^2=τ.
+// gfP12 implements the field of size p¹² as a quadratic extension of gfP6
+// where ω²=τ.
 type gfP12 struct {
 	x, y gfP6 // value is xω + y
 }
@@ -64,7 +64,7 @@ func (e *gfP12) Frobenius(a *gfP12) *gfP12 {
 	return e
 }
 
-// FrobeniusP2 computes (xω+y)^p^2 = x^p^2 ω·ξ^((p^2-1)/6) + y^p^2
+// FrobeniusP2 computes (xω+y)^p² = x^p² ω·ξ^((p²-1)/6) + y^p²
 func (e *gfP12) FrobeniusP2(a *gfP12) *gfP12 {
 	e.x.FrobeniusP2(&a.x)
 	e.x.MulGFP(&e.x, xiToPSquaredMinus1Over6)

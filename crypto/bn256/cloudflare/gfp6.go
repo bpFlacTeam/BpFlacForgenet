@@ -4,10 +4,10 @@ package bn256
 // Pairing-Friendly Fields, Devegili et al.
 // http://eprint.iacr.org/2006/471.pdf.
 
-// gfP6 implements the field of size p as a cubic extension of gfP2 where τ^3=ξ
+// gfP6 implements the field of size p⁶ as a cubic extension of gfP2 where τ³=ξ
 // and ξ=i+9.
 type gfP6 struct {
-	x, y, z gfP2 // value is xτ^2 + yτ + z
+	x, y, z gfP2 // value is xτ² + yτ + z
 }
 
 func (e *gfP6) String() string {
@@ -60,11 +60,11 @@ func (e *gfP6) Frobenius(a *gfP6) *gfP6 {
 	return e
 }
 
-// FrobeniusP2 computes (xτ^2+yτ+z)^(p^2) = xτ^(2p^2) + yτ^(p^2) + z
+// FrobeniusP2 computes (xτ²+yτ+z)^(p²) = xτ^(2p²) + yτ^(p²) + z
 func (e *gfP6) FrobeniusP2(a *gfP6) *gfP6 {
-	// τ^(2p^2) = τ^2τ^(2p^2-2) = τ^2ξ^((2p^2-2)/3)
+	// τ^(2p²) = τ²τ^(2p²-2) = τ²ξ^((2p²-2)/3)
 	e.x.MulScalar(&a.x, xiTo2PSquaredMinus2Over3)
-	// τ^(p^2) = ττ^(p^2-1) = τξ^((p^2-1)/3)
+	// τ^(p²) = ττ^(p²-1) = τξ^((p²-1)/3)
 	e.y.MulScalar(&a.y, xiToPSquaredMinus1Over3)
 	e.z.Set(&a.z)
 	return e
@@ -135,7 +135,7 @@ func (e *gfP6) MulGFP(a *gfP6, b *gfP) *gfP6 {
 	return e
 }
 
-// MulTau computes τ·(aτ^2+bτ+c) = bτ^2+cτ+aξ
+// MulTau computes τ·(aτ²+bτ+c) = bτ²+cτ+aξ
 func (e *gfP6) MulTau(a *gfP6) *gfP6 {
 	tz := (&gfP2{}).MulXi(&a.x)
 	ty := (&gfP2{}).Set(&a.y)
@@ -173,15 +173,15 @@ func (e *gfP6) Invert(a *gfP6) *gfP6 {
 	// ftp://136.206.11.249/pub/crypto/pairings.pdf
 
 	// Here we can give a short explanation of how it works: let j be a cubic root of
-	// unity in GF(p^2) so that 1+j+j^2=0.
-	// Then (xτ^2 + yτ + z)(xj^2τ^2 + yjτ + z)(xjτ^2 + yj^2τ + z)
-	// = (xτ^2 + yτ + z)(Cτ^2+Bτ+A)
-	// = (x^3ξ^2+y^3ξ+z^3-3ξxyz) = F is an element of the base field (the norm).
+	// unity in GF(p²) so that 1+j+j²=0.
+	// Then (xτ² + yτ + z)(xj²τ² + yjτ + z)(xjτ² + yj²τ + z)
+	// = (xτ² + yτ + z)(Cτ²+Bτ+A)
+	// = (x³ξ²+y³ξ+z³-3ξxyz) = F is an element of the base field (the norm).
 	//
-	// On the other hand (xj^2τ^2 + yjτ + z)(xjτ^2 + yj^2τ + z)
-	// = τ^2(y^2-ξxz) + τ(ξx^2-yz) + (z^2-ξxy)
+	// On the other hand (xj²τ² + yjτ + z)(xjτ² + yj²τ + z)
+	// = τ²(y²-ξxz) + τ(ξx²-yz) + (z²-ξxy)
 	//
-	// So that's why A = (z^2-ξxy), B = (ξx^2-yz), C = (y^2-ξxz)
+	// So that's why A = (z²-ξxy), B = (ξx²-yz), C = (y²-ξxz)
 	t1 := (&gfP2{}).Mul(&a.x, &a.y)
 	t1.MulXi(t1)
 

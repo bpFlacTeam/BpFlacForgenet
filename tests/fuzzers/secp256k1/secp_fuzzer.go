@@ -1,4 +1,4 @@
-// Copyright 2021 The go-ethereum Authors # Copyright 2023 The go-wodchain Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -21,9 +21,8 @@ package secp256k1
 import (
 	"fmt"
 
-	"wodchain/crypto/secp256k1"
-
 	"github.com/btcsuite/btcd/btcec/v2"
+	"wodchain/crypto/secp256k1"
 	fuzz "github.com/google/gofuzz"
 )
 

@@ -4,8 +4,8 @@ package bn256
 // Pairing-Friendly Fields, Devegili et al.
 // http://eprint.iacr.org/2006/471.pdf.
 
-// gfP2 implements a field of size p^2 as a quadratic extension of the base field
-// where i^2=-1.
+// gfP2 implements a field of size p² as a quadratic extension of the base field
+// where i²=-1.
 type gfP2 struct {
 	x, y gfP // value is xi+y.
 }
@@ -123,7 +123,7 @@ func (e *gfP2) MulXi(a *gfP2) *gfP2 {
 
 func (e *gfP2) Square(a *gfP2) *gfP2 {
 	// Complex squaring algorithm:
-	// (xi+y)^2 = (x+y)(y-x) + 2*i*x*y
+	// (xi+y)² = (x+y)(y-x) + 2*i*x*y
 	tx, ty := &gfP{}, &gfP{}
 	gfpSub(tx, &a.y, &a.x)
 	gfpAdd(ty, &a.x, &a.y)

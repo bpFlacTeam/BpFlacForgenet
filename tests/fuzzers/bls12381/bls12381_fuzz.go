@@ -1,4 +1,4 @@
-// Copyright 2021 The go-ethereum Authors # Copyright 2023 The go-wodchain Authors
+// Copyright 2021 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -26,13 +26,12 @@ import (
 	"io"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/crypto/bls12381"
-
 	"github.com/consensys/gnark-crypto/ecc"
 	gnark "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"wodchain/common"
+	"wodchain/crypto/bls12381"
 	blst "github.com/supranational/blst/bindings/go"
 )
 

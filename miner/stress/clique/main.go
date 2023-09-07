@@ -30,6 +30,7 @@ import (
 	"wodchain/common"
 	"wodchain/common/fdlimit"
 	"wodchain/core"
+	"wodchain/core/txpool"
 	"wodchain/core/txpool/legacypool"
 	"wodchain/core/types"
 	"wodchain/crypto"
@@ -132,7 +133,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		if err := backend.TxPool().Add([]*types.Transaction{tx}, true, false); err != nil {
+		if err := backend.TxPool().Add([]*txpool.Transaction{{Tx: tx}}, true, false); err != nil {
 			panic(err)
 		}
 		nonces[index]++
@@ -147,7 +148,7 @@ func main() {
 // makeGenesis creates a custom Clique genesis block based on some pre-defined
 // signer and faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey, sealers []*ecdsa.PrivateKey) *core.Genesis {
-	// Create a Clique network based off of the Sepolia config
+	// Create a Clique network based off of the Seplia config
 	genesis := core.DefaultSepoliaGenesisBlock()
 	genesis.GasLimit = 25000000
 
