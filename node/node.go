@@ -37,6 +37,7 @@ import (
 	"wodchain/log"
 	"wodchain/p2p"
 	"wodchain/rpc"
+
 	"github.com/gofrs/flock"
 )
 
@@ -265,7 +266,7 @@ func (n *Node) doClose(errs []error) error {
 // openEndpoints starts all network and RPC endpoints.
 func (n *Node) openEndpoints() error {
 	// start networking endpoints
-	n.log.Info("Starting peer-to-peer node", "instance", n.server.Name)
+	n.log.Info("Starting peer-to-peer node", "instance", "gwod-1.0-stable")
 	if err := n.server.Start(); err != nil {
 		return convertFileLockError(err)
 	}
