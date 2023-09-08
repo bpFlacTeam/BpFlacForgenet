@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sync/atomic"
 	"time"
 
@@ -65,12 +66,8 @@ func (msg Msg) String() string {
 
 // Discard reads any remaining payload data into a black hole.
 func (msg Msg) Discard() error {
-	_, err := io.Copy(io.Discard, msg.Payload)
+	_, err := io.Copy(ioutil.Discard, msg.Payload)
 	return err
-}
-
-func (msg Msg) Time() time.Time {
-	return msg.ReceivedAt
 }
 
 type MsgReader interface {
@@ -107,11 +104,12 @@ func Send(w MsgWriter, msgcode uint64, data interface{}) error {
 // SendItems writes an RLP with the given code and data elements.
 // For a call such as:
 //
-//	SendItems(w, code, e1, e2, e3)
+//    SendItems(w, code, e1, e2, e3)
 //
 // the message payload will be an RLP list containing the items:
 //
-//	[e1, e2, e3]
+//    [e1, e2, e3]
+//
 func SendItems(w MsgWriter, msgcode uint64, elems ...interface{}) error {
 	return Send(w, msgcode, elems)
 }
@@ -156,7 +154,7 @@ func MsgPipe() (*MsgPipeRW, *MsgPipeRW) {
 	var (
 		c1, c2  = make(chan Msg), make(chan Msg)
 		closing = make(chan struct{})
-		closed  = new(atomic.Bool)
+		closed  = new(int32)
 		rw1     = &MsgPipeRW{c1, c2, closing, closed}
 		rw2     = &MsgPipeRW{c2, c1, closing, closed}
 	)
@@ -172,13 +170,13 @@ type MsgPipeRW struct {
 	w       chan<- Msg
 	r       <-chan Msg
 	closing chan struct{}
-	closed  *atomic.Bool
+	closed  *int32
 }
 
 // WriteMsg sends a message on the pipe.
 // It blocks until the receiver has consumed the message payload.
 func (p *MsgPipeRW) WriteMsg(msg Msg) error {
-	if !p.closed.Load() {
+	if atomic.LoadInt32(p.closed) == 0 {
 		consumed := make(chan struct{}, 1)
 		msg.Payload = &eofSignal{msg.Payload, msg.Size, consumed}
 		select {
@@ -199,7 +197,7 @@ func (p *MsgPipeRW) WriteMsg(msg Msg) error {
 
 // ReadMsg returns a message sent on the other end of the pipe.
 func (p *MsgPipeRW) ReadMsg() (Msg, error) {
-	if !p.closed.Load() {
+	if atomic.LoadInt32(p.closed) == 0 {
 		select {
 		case msg := <-p.r:
 			return msg, nil
@@ -213,8 +211,9 @@ func (p *MsgPipeRW) ReadMsg() (Msg, error) {
 // of the pipe. They will return ErrPipeClosed. Close also
 // interrupts any reads from a message payload.
 func (p *MsgPipeRW) Close() error {
-	if p.closed.Swap(true) {
+	if atomic.AddInt32(p.closed, 1) != 1 {
 		// someone else is already closing
+		atomic.StoreInt32(p.closed, 1) // avoid overflow
 		return nil
 	}
 	close(p.closing)
@@ -242,7 +241,7 @@ func ExpectMsg(r MsgReader, code uint64, content interface{}) error {
 	if int(msg.Size) != len(contentEnc) {
 		return fmt.Errorf("message size mismatch: got %d, want %d", msg.Size, len(contentEnc))
 	}
-	actualContent, err := io.ReadAll(msg.Payload)
+	actualContent, err := ioutil.ReadAll(msg.Payload)
 	if err != nil {
 		return err
 	}

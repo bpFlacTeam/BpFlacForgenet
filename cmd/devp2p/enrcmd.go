@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -31,41 +31,39 @@ import (
 	"wodchain/p2p/enode"
 	"wodchain/p2p/enr"
 	"wodchain/rlp"
-	"github.com/urfave/cli/v2"
+	"gopkg.in/urfave/cli.v1"
 )
 
-var fileFlag = &cli.StringFlag{Name: "file"}
-
-var enrdumpCommand = &cli.Command{
+var enrdumpCommand = cli.Command{
 	Name:   "enrdump",
 	Usage:  "Pretty-prints node records",
 	Action: enrdump,
 	Flags: []cli.Flag{
-		fileFlag,
+		cli.StringFlag{Name: "file"},
 	},
 }
 
 func enrdump(ctx *cli.Context) error {
 	var source string
-	if file := ctx.String(fileFlag.Name); file != "" {
+	if file := ctx.String("file"); file != "" {
 		if ctx.NArg() != 0 {
-			return errors.New("can't dump record from command-line argument in -file mode")
+			return fmt.Errorf("can't dump record from command-line argument in -file mode")
 		}
 		var b []byte
 		var err error
 		if file == "-" {
-			b, err = io.ReadAll(os.Stdin)
+			b, err = ioutil.ReadAll(os.Stdin)
 		} else {
-			b, err = os.ReadFile(file)
+			b, err = ioutil.ReadFile(file)
 		}
 		if err != nil {
 			return err
 		}
 		source = string(b)
 	} else if ctx.NArg() == 1 {
-		source = ctx.Args().First()
+		source = ctx.Args()[0]
 	} else {
-		return errors.New("need record as argument")
+		return fmt.Errorf("need record as argument")
 	}
 
 	r, err := parseRecord(source)

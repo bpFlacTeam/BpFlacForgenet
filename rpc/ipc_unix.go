@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-//go:build darwin || dragonfly || freebsd || linux || nacl || netbsd || openbsd || solaris
 // +build darwin dragonfly freebsd linux nacl netbsd openbsd solaris
 
 package rpc
@@ -29,17 +28,10 @@ import (
 	"wodchain/log"
 )
 
-const (
-	// On Linux, sun_path is 108 bytes in size
-	// see http://man7.org/linux/man-pages/man7/unix.7.html
-	maxPathSize = int(108)
-)
-
 // ipcListen will create a Unix socket on the given endpoint.
 func ipcListen(endpoint string) (net.Listener, error) {
-	// account for null-terminator too
-	if len(endpoint)+1 > maxPathSize {
-		log.Warn(fmt.Sprintf("The ipc endpoint is longer than %d characters. ", maxPathSize-1),
+	if len(endpoint) > int(max_path_size) {
+		log.Warn(fmt.Sprintf("The ipc endpoint is longer than %d characters. ", max_path_size),
 			"endpoint", endpoint)
 	}
 

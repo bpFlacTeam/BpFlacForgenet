@@ -14,15 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-//go:build !nacl && !js && cgo && !gofuzz
-// +build !nacl,!js,cgo,!gofuzz
+// +build !nacl,!js,cgo
 
 package crypto
 
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"errors"
 	"fmt"
 
 	"wodchain/common/math"
@@ -49,7 +47,7 @@ func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
 //
 // This function is susceptible to chosen plaintext attacks that can leak
 // information about the private key that is used for signing. Callers must
-// be aware that the given digest cannot be chosen by an adversary. Common
+// be aware that the given digest cannot be chosen by an adversery. Common
 // solution is to hash any input before calculating the signature.
 //
 // The produced signature is in the [R || S || V] format where V is 0 or 1.
@@ -73,7 +71,7 @@ func VerifySignature(pubkey, digestHash, signature []byte) bool {
 func DecompressPubkey(pubkey []byte) (*ecdsa.PublicKey, error) {
 	x, y := secp256k1.DecompressPubkey(pubkey)
 	if x == nil {
-		return nil, errors.New("invalid public key")
+		return nil, fmt.Errorf("invalid public key")
 	}
 	return &ecdsa.PublicKey{X: x, Y: y, Curve: S256()}, nil
 }

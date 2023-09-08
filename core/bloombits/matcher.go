@@ -83,7 +83,7 @@ type Matcher struct {
 	retrievals chan chan *Retrieval // Retriever processes waiting for task allocations
 	deliveries chan *Retrieval      // Retriever processes waiting for task response deliveries
 
-	running atomic.Bool // Atomic flag whether a session is live or not
+	running uint32 // Atomic flag whether a session is live or not
 }
 
 // NewMatcher creates a new pipeline for retrieving bloom bit streams and doing
@@ -146,10 +146,10 @@ func (m *Matcher) addScheduler(idx uint) {
 // channel is closed.
 func (m *Matcher) Start(ctx context.Context, begin, end uint64, results chan uint64) (*MatcherSession, error) {
 	// Make sure we're not creating concurrent sessions
-	if m.running.Swap(true) {
+	if atomic.SwapUint32(&m.running, 1) == 1 {
 		return nil, errors.New("matcher already running")
 	}
-	defer m.running.Store(false)
+	defer atomic.StoreUint32(&m.running, 0)
 
 	// Initiate a new matching round
 	session := &MatcherSession{
@@ -510,9 +510,8 @@ type MatcherSession struct {
 	closer sync.Once     // Sync object to ensure we only ever close once
 	quit   chan struct{} // Quit channel to request pipeline termination
 
-	ctx     context.Context // Context used by the light client to abort filtering
-	err     error           // Global error to track retrieval failures deep in the chain
-	errLock sync.Mutex
+	ctx context.Context // Context used by the light client to abort filtering
+	err atomic.Value    // Global error to track retrieval failures deep in the chain
 
 	pend sync.WaitGroup
 }
@@ -530,10 +529,10 @@ func (s *MatcherSession) Close() {
 
 // Error returns any failure encountered during the matching session.
 func (s *MatcherSession) Error() error {
-	s.errLock.Lock()
-	defer s.errLock.Unlock()
-
-	return s.err
+	if err := s.err.Load(); err != nil {
+		return err.(error)
+	}
+	return nil
 }
 
 // allocateRetrieval assigns a bloom bit index to a client process that can either
@@ -612,7 +611,7 @@ func (s *MatcherSession) Multiplex(batch int, wait time.Duration, mux chan chan 
 				return
 
 			case <-time.After(wait):
-				// Throttling up, fetch whatever is available
+				// Throttling up, fetch whatever's available
 			}
 		}
 		// Allocate as much as we can handle and request servicing
@@ -631,9 +630,7 @@ func (s *MatcherSession) Multiplex(batch int, wait time.Duration, mux chan chan 
 
 			result := <-request
 			if result.Error != nil {
-				s.errLock.Lock()
-				s.err = result.Error
-				s.errLock.Unlock()
+				s.err.Store(result.Error)
 				s.Close()
 			}
 			s.deliverSections(result.Bit, result.Sections, result.Bitsets)

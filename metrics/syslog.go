@@ -1,4 +1,3 @@
-//go:build !windows
 // +build !windows
 
 package metrics
@@ -17,8 +16,6 @@ func Syslog(r Registry, d time.Duration, w *syslog.Writer) {
 			switch metric := i.(type) {
 			case Counter:
 				w.Info(fmt.Sprintf("counter %s: count: %d", name, metric.Count()))
-			case CounterFloat64:
-				w.Info(fmt.Sprintf("counter %s: count: %f", name, metric.Count()))
 			case Gauge:
 				w.Info(fmt.Sprintf("gauge %s: value: %d", name, metric.Value()))
 			case GaugeFloat64:

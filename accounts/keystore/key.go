@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +32,7 @@ import (
 	"wodchain/accounts"
 	"wodchain/common"
 	"wodchain/crypto"
-	"github.com/google/uuid"
+	"github.com/pborman/uuid"
 )
 
 const (
@@ -109,10 +110,7 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	}
 
 	u := new(uuid.UUID)
-	*u, err = uuid.Parse(keyJSON.Id)
-	if err != nil {
-		return err
-	}
+	*u = uuid.Parse(keyJSON.Id)
 	k.Id = *u
 	addr, err := hex.DecodeString(keyJSON.Address)
 	if err != nil {
@@ -130,10 +128,7 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 }
 
 func newKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *Key {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		panic(fmt.Sprintf("Could not create random uuid: %v", err))
-	}
+	id := uuid.NewRandom()
 	key := &Key{
 		Id:         id,
 		Address:    crypto.PubkeyToAddress(privateKeyECDSA.PublicKey),
@@ -196,7 +191,7 @@ func writeTemporaryKeyFile(file string, content []byte) (string, error) {
 	}
 	// Atomic write: create a temporary hidden file first
 	// then move it into place. TempFile assigns mode 0600.
-	f, err := os.CreateTemp(filepath.Dir(file), "."+filepath.Base(file)+".tmp")
+	f, err := ioutil.TempFile(filepath.Dir(file), "."+filepath.Base(file)+".tmp")
 	if err != nil {
 		return "", err
 	}

@@ -19,7 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"sync/atomic"
@@ -63,7 +63,7 @@ func main() {
 		adapter = adapters.NewSimAdapter(services)
 
 	case "exec":
-		tmpdir, err := os.MkdirTemp("", "p2p-example")
+		tmpdir, err := ioutil.TempDir("", "p2p-example")
 		if err != nil {
 			log.Crit("error creating temp dir", "err", err)
 		}
@@ -91,7 +91,7 @@ func main() {
 type pingPongService struct {
 	id       enode.ID
 	log      log.Logger
-	received atomic.Int64
+	received int64
 }
 
 func newPingPongService(id enode.ID) *pingPongService {
@@ -125,7 +125,7 @@ func (p *pingPongService) Info() interface{} {
 	return struct {
 		Received int64 `json:"received"`
 	}{
-		p.received.Load(),
+		atomic.LoadInt64(&p.received),
 	}
 }
 
@@ -139,7 +139,7 @@ const (
 func (p *pingPongService) Run(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 	log := p.log.New("peer.id", peer.ID())
 
-	errC := make(chan error, 1)
+	errC := make(chan error)
 	go func() {
 		for range time.Tick(10 * time.Second) {
 			log.Info("sending ping")
@@ -156,13 +156,13 @@ func (p *pingPongService) Run(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 				errC <- err
 				return
 			}
-			payload, err := io.ReadAll(msg.Payload)
+			payload, err := ioutil.ReadAll(msg.Payload)
 			if err != nil {
 				errC <- err
 				return
 			}
 			log.Info("received message", "msg.code", msg.Code, "msg.payload", string(payload))
-			p.received.Add(1)
+			atomic.AddInt64(&p.received, 1)
 			if msg.Code == pingMsgCode {
 				log.Info("sending pong")
 				go p2p.Send(rw, pongMsgCode, "PONG")

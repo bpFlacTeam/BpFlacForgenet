@@ -19,19 +19,32 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
 
 	"wodchain/internal/debug"
-	"wodchain/internal/flags"
 	"wodchain/p2p/enode"
-	"github.com/urfave/cli/v2"
+	"wodchain/params"
+	"gopkg.in/urfave/cli.v1"
 )
 
-var app = flags.NewApp("go-ethereum devp2p tool")
+var (
+	// Git information set by linker when building with ci.go.
+	gitCommit string
+	gitDate   string
+	app       = &cli.App{
+		Name:        filepath.Base(os.Args[0]),
+		Usage:       "go-ethereum devp2p tool",
+		Version:     params.VersionWithCommit(gitCommit, gitDate),
+		Writer:      os.Stdout,
+		HideVersion: true,
+	}
+)
 
 func init() {
+	// Set up the CLI app.
 	app.Flags = append(app.Flags, debug.Flags...)
 	app.Before = func(ctx *cli.Context) error {
-		flags.MigrateGlobalFlags(ctx)
 		return debug.Setup(ctx)
 	}
 	app.After = func(ctx *cli.Context) error {
@@ -42,9 +55,8 @@ func init() {
 		fmt.Fprintf(os.Stderr, "No such command: %s\n", cmd)
 		os.Exit(1)
 	}
-
 	// Add subcommands.
-	app.Commands = []*cli.Command{
+	app.Commands = []cli.Command{
 		enrdumpCommand,
 		keyCommand,
 		discv4Command,
@@ -61,17 +73,10 @@ func main() {
 
 // commandHasFlag returns true if the current command supports the given flag.
 func commandHasFlag(ctx *cli.Context, flag cli.Flag) bool {
-	names := flag.Names()
-	set := make(map[string]struct{}, len(names))
-	for _, name := range names {
-		set[name] = struct{}{}
-	}
-	for _, fn := range ctx.FlagNames() {
-		if _, ok := set[fn]; ok {
-			return true
-		}
-	}
-	return false
+	flags := ctx.FlagNames()
+	sort.Strings(flags)
+	i := sort.SearchStrings(flags, flag.GetName())
+	return i != len(flags) && flags[i] == flag.GetName()
 }
 
 // getNodeArg handles the common case of a single node descriptor argument.
@@ -79,7 +84,7 @@ func getNodeArg(ctx *cli.Context) *enode.Node {
 	if ctx.NArg() < 1 {
 		exit("missing node as command-line argument")
 	}
-	n, err := parseNode(ctx.Args().First())
+	n, err := parseNode(ctx.Args()[0])
 	if err != nil {
 		exit(err)
 	}

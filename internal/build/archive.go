@@ -20,13 +20,11 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type Archive interface {
@@ -91,7 +89,7 @@ func WriteArchive(name string, files []string) (err error) {
 	}()
 	archive, basename := NewArchive(archfd)
 	if archive == nil {
-		return errors.New("unknown archive extension")
+		return fmt.Errorf("unknown archive extension")
 	}
 	fmt.Println(name)
 	if err := archive.Directory(basename); err != nil {
@@ -161,7 +159,6 @@ func (a *TarballArchive) Directory(name string) error {
 		Name:     a.dir,
 		Mode:     0755,
 		Typeflag: tar.TypeDir,
-		ModTime:  time.Now(),
 	})
 }
 

@@ -17,10 +17,10 @@
 package bind
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"errors"
 	"io"
+	"io/ioutil"
 	"math/big"
 
 	"wodchain/accounts"
@@ -44,7 +44,7 @@ var ErrNotAuthorized = errors.New("not authorized to sign this account")
 // Deprecated: Use NewTransactorWithChainID instead.
 func NewTransactor(keyin io.Reader, passphrase string) (*TransactOpts, error) {
 	log.Warn("WARNING: NewTransactor has been deprecated in favour of NewTransactorWithChainID")
-	json, err := io.ReadAll(keyin)
+	json, err := ioutil.ReadAll(keyin)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,6 @@ func NewKeyStoreTransactor(keystore *keystore.KeyStore, account accounts.Account
 			}
 			return tx.WithSignature(signer, signature)
 		},
-		Context: context.Background(),
 	}, nil
 }
 
@@ -98,14 +97,13 @@ func NewKeyedTransactor(key *ecdsa.PrivateKey) *TransactOpts {
 			}
 			return tx.WithSignature(signer, signature)
 		},
-		Context: context.Background(),
 	}
 }
 
 // NewTransactorWithChainID is a utility method to easily create a transaction signer from
 // an encrypted json key stream and the associated passphrase.
 func NewTransactorWithChainID(keyin io.Reader, passphrase string, chainID *big.Int) (*TransactOpts, error) {
-	json, err := io.ReadAll(keyin)
+	json, err := ioutil.ReadAll(keyin)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +120,7 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 	if chainID == nil {
 		return nil, ErrNoChainID
 	}
-	signer := types.LatestSignerForChainID(chainID)
+	signer := types.NewEIP155Signer(chainID)
 	return &TransactOpts{
 		From: account.Address,
 		Signer: func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
@@ -135,7 +133,6 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 			}
 			return tx.WithSignature(signer, signature)
 		},
-		Context: context.Background(),
 	}, nil
 }
 
@@ -146,7 +143,7 @@ func NewKeyedTransactorWithChainID(key *ecdsa.PrivateKey, chainID *big.Int) (*Tr
 	if chainID == nil {
 		return nil, ErrNoChainID
 	}
-	signer := types.LatestSignerForChainID(chainID)
+	signer := types.NewEIP155Signer(chainID)
 	return &TransactOpts{
 		From: keyAddr,
 		Signer: func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
@@ -159,7 +156,6 @@ func NewKeyedTransactorWithChainID(key *ecdsa.PrivateKey, chainID *big.Int) (*Tr
 			}
 			return tx.WithSignature(signer, signature)
 		},
-		Context: context.Background(),
 	}, nil
 }
 
@@ -174,6 +170,5 @@ func NewClefTransactor(clef *external.ExternalSigner, account accounts.Account) 
 			}
 			return clef.SignTx(account, transaction, nil) // Clef enforces its own chain id
 		},
-		Context: context.Background(),
 	}
 }

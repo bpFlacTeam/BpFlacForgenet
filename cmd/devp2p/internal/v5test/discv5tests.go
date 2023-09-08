@@ -58,7 +58,7 @@ func (s *Suite) AllTests() []utesting.Test {
 	}
 }
 
-// TestPing sends PING and expects a PONG response.
+// This test sends PING and expects a PONG response.
 func (s *Suite) TestPing(t *utesting.T) {
 	conn, l1 := s.listen1(t)
 	defer conn.close()
@@ -84,7 +84,7 @@ func checkPong(t *utesting.T, pong *v5wire.Pong, ping *v5wire.Ping, c net.Packet
 	}
 }
 
-// TestPingLargeRequestID sends PING with a 9-byte request ID, which isn't allowed by the spec.
+// This test sends PING with a 9-byte request ID, which isn't allowed by the spec.
 // The remote node should not respond.
 func (s *Suite) TestPingLargeRequestID(t *utesting.T) {
 	conn, l1 := s.listen1(t)
@@ -103,7 +103,7 @@ func (s *Suite) TestPingLargeRequestID(t *utesting.T) {
 	}
 }
 
-// TestPingMultiIP establishes a session from one IP as usual. The session is then reused
+// In this test, a session is established from one IP as usual. The session is then reused
 // on another IP, which shouldn't work. The remote node should respond with WHOAREYOU for
 // the attempt from a different IP.
 func (s *Suite) TestPingMultiIP(t *utesting.T) {
@@ -153,7 +153,7 @@ func (s *Suite) TestPingMultiIP(t *utesting.T) {
 	}
 }
 
-// TestPingHandshakeInterrupted starts a handshake, but doesn't finish it and sends a second ordinary message
+// This test starts a handshake, but doesn't finish it and sends a second ordinary message
 // packet instead of a handshake message packet. The remote node should respond with
 // another WHOAREYOU challenge for the second packet.
 func (s *Suite) TestPingHandshakeInterrupted(t *utesting.T) {
@@ -180,7 +180,7 @@ func (s *Suite) TestPingHandshakeInterrupted(t *utesting.T) {
 	}
 }
 
-// TestTalkRequest sends TALKREQ and expects an empty TALKRESP response.
+// This test sends TALKREQ and expects an empty TALKRESP response.
 func (s *Suite) TestTalkRequest(t *utesting.T) {
 	conn, l1 := s.listen1(t)
 	defer conn.close()
@@ -215,7 +215,7 @@ func (s *Suite) TestTalkRequest(t *utesting.T) {
 	}
 }
 
-// TestFindnodeZeroDistance checks that the remote node returns itself for FINDNODE with distance zero.
+// This test checks that the remote node returns itself for FINDNODE with distance zero.
 func (s *Suite) TestFindnodeZeroDistance(t *utesting.T) {
 	conn, l1 := s.listen1(t)
 	defer conn.close()
@@ -232,7 +232,7 @@ func (s *Suite) TestFindnodeZeroDistance(t *utesting.T) {
 	}
 }
 
-// TestFindnodeResults pings the node under test from multiple nodes. After waiting for them to be
+// In this test, multiple nodes ping the node under test. After waiting for them to be
 // accepted into the remote table, the test checks that they are returned by FINDNODE.
 func (s *Suite) TestFindnodeResults(t *utesting.T) {
 	// Create bystanders.
@@ -355,7 +355,7 @@ func (bn *bystander) loop() {
 			wasAdded = true
 			bn.notifyAdded()
 		case *v5wire.Findnode:
-			bn.conn.write(bn.l, &v5wire.Nodes{ReqID: p.ReqID, RespCount: 1}, nil)
+			bn.conn.write(bn.l, &v5wire.Nodes{ReqID: p.ReqID, Total: 1}, nil)
 			wasAdded = true
 			bn.notifyAdded()
 		case *v5wire.TalkRequest:

@@ -19,11 +19,9 @@ package rlp
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 
 	"wodchain/core/types"
 	"wodchain/rlp"
-	"github.com/holiman/uint256"
 )
 
 func decodeEncode(input []byte, val interface{}, i int) {
@@ -40,9 +38,6 @@ func decodeEncode(input []byte, val interface{}, i int) {
 
 func Fuzz(input []byte) int {
 	if len(input) == 0 {
-		return 0
-	}
-	if len(input) > 500*1024 {
 		return 0
 	}
 
@@ -127,17 +122,6 @@ func Fuzz(input []byte) int {
 		i++
 		var rs types.Receipts
 		decodeEncode(input, &rs, i)
-	}
-	{
-		i++
-		var v struct {
-			AnIntPtr  *big.Int
-			AnInt     big.Int
-			AnU256Ptr *uint256.Int
-			AnU256    uint256.Int
-			NotAnU256 [4]uint64
-		}
-		decodeEncode(input, &v, i)
 	}
 	return 1
 }

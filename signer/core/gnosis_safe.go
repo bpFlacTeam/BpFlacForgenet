@@ -1,19 +1,3 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package core
 
 import (
@@ -23,7 +7,6 @@ import (
 	"wodchain/common"
 	"wodchain/common/hexutil"
 	"wodchain/common/math"
-	"wodchain/signer/core/apitypes"
 )
 
 // GnosisSafeTx is a type to parse the safe-tx returned by the relayer,
@@ -47,24 +30,18 @@ type GnosisSafeTx struct {
 	SafeTxGas      big.Int                 `json:"safeTxGas"`
 	Nonce          big.Int                 `json:"nonce"`
 	InputExpHash   common.Hash             `json:"safeTxHash"`
-	ChainId        *math.HexOrDecimal256   `json:"chainId,omitempty"`
 }
 
 // ToTypedData converts the tx to a EIP-712 Typed Data structure for signing
-func (tx *GnosisSafeTx) ToTypedData() apitypes.TypedData {
+func (tx *GnosisSafeTx) ToTypedData() TypedData {
 	var data hexutil.Bytes
 	if tx.Data != nil {
 		data = *tx.Data
 	}
-	var domainType = []apitypes.Type{{Name: "verifyingContract", Type: "address"}}
-	if tx.ChainId != nil {
-		domainType = append([]apitypes.Type{{Name: "chainId", Type: "uint256"}}, domainType[0])
-	}
-
-	gnosisTypedData := apitypes.TypedData{
-		Types: apitypes.Types{
-			"EIP712Domain": domainType,
-			"SafeTx": []apitypes.Type{
+	gnosisTypedData := TypedData{
+		Types: Types{
+			"EIP712Domain": []Type{{Name: "verifyingContract", Type: "address"}},
+			"SafeTx": []Type{
 				{Name: "to", Type: "address"},
 				{Name: "value", Type: "uint256"},
 				{Name: "data", Type: "bytes"},
@@ -77,12 +54,11 @@ func (tx *GnosisSafeTx) ToTypedData() apitypes.TypedData {
 				{Name: "nonce", Type: "uint256"},
 			},
 		},
-		Domain: apitypes.TypedDataDomain{
+		Domain: TypedDataDomain{
 			VerifyingContract: tx.Safe.Address().Hex(),
-			ChainId:           tx.ChainId,
 		},
 		PrimaryType: "SafeTx",
-		Message: apitypes.TypedDataMessage{
+		Message: TypedDataMessage{
 			"to":             tx.To.Address().Hex(),
 			"value":          tx.Value.String(),
 			"data":           data,
@@ -100,18 +76,16 @@ func (tx *GnosisSafeTx) ToTypedData() apitypes.TypedData {
 
 // ArgsForValidation returns a SendTxArgs struct, which can be used for the
 // common validations, e.g. look up 4byte destinations
-func (tx *GnosisSafeTx) ArgsForValidation() *apitypes.SendTxArgs {
-	gp := hexutil.Big(tx.GasPrice)
-	args := &apitypes.SendTxArgs{
+func (tx *GnosisSafeTx) ArgsForValidation() *SendTxArgs {
+	args := &SendTxArgs{
 		From:     tx.Safe,
 		To:       &tx.To,
 		Gas:      hexutil.Uint64(tx.SafeTxGas.Uint64()),
-		GasPrice: &gp,
+		GasPrice: hexutil.Big(tx.GasPrice),
 		Value:    hexutil.Big(tx.Value),
 		Nonce:    hexutil.Uint64(tx.Nonce.Uint64()),
 		Data:     tx.Data,
 		Input:    nil,
-		ChainID:  (*hexutil.Big)(tx.ChainId),
 	}
 	return args
 }

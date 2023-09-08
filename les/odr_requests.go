@@ -93,7 +93,7 @@ func (r *BlockRequest) Request(reqID uint64, peer *serverPeer) error {
 	return peer.requestBodies(reqID, []common.Hash{r.Hash})
 }
 
-// Validate processes an ODR request reply message from the LES network
+// Valid processes an ODR request reply message from the LES network
 // returns true and stores results in memory if the message was a valid reply
 // to the request (implementation of LesOdrRequest)
 func (r *BlockRequest) Validate(db ethdb.Database, msg *Msg) error {
@@ -116,7 +116,7 @@ func (r *BlockRequest) Validate(db ethdb.Database, msg *Msg) error {
 	if r.Header == nil {
 		return errHeaderUnavailable
 	}
-	if r.Header.TxHash != types.DeriveSha(types.Transactions(body.Transactions), trie.NewStackTrie(nil)) {
+	if r.Header.TxHash != types.DeriveSha(types.Transactions(body.Transactions), new(trie.Trie)) {
 		return errTxHashMismatch
 	}
 	if r.Header.UncleHash != types.CalcUncleHash(body.Uncles) {
@@ -151,7 +151,7 @@ func (r *ReceiptsRequest) Request(reqID uint64, peer *serverPeer) error {
 	return peer.requestReceipts(reqID, []common.Hash{r.Hash})
 }
 
-// Validate processes an ODR request reply message from the LES network
+// Valid processes an ODR request reply message from the LES network
 // returns true and stores results in memory if the message was a valid reply
 // to the request (implementation of LesOdrRequest)
 func (r *ReceiptsRequest) Validate(db ethdb.Database, msg *Msg) error {
@@ -174,7 +174,7 @@ func (r *ReceiptsRequest) Validate(db ethdb.Database, msg *Msg) error {
 	if r.Header == nil {
 		return errHeaderUnavailable
 	}
-	if r.Header.ReceiptHash != types.DeriveSha(receipt, trie.NewStackTrie(nil)) {
+	if r.Header.ReceiptHash != types.DeriveSha(receipt, new(trie.Trie)) {
 		return errReceiptHashMismatch
 	}
 	// Validations passed, store and return
@@ -183,9 +183,9 @@ func (r *ReceiptsRequest) Validate(db ethdb.Database, msg *Msg) error {
 }
 
 type ProofReq struct {
-	BHash               common.Hash
-	AccountAddress, Key []byte
-	FromLevel           uint
+	BHash       common.Hash
+	AccKey, Key []byte
+	FromLevel   uint
 }
 
 // ODR request type for state/storage trie entries, see LesOdrRequest interface
@@ -206,14 +206,14 @@ func (r *TrieRequest) CanSend(peer *serverPeer) bool {
 func (r *TrieRequest) Request(reqID uint64, peer *serverPeer) error {
 	peer.Log().Debug("Requesting trie proof", "root", r.Id.Root, "key", r.Key)
 	req := ProofReq{
-		BHash:          r.Id.BlockHash,
-		AccountAddress: r.Id.AccountAddress,
-		Key:            r.Key,
+		BHash:  r.Id.BlockHash,
+		AccKey: r.Id.AccKey,
+		Key:    r.Key,
 	}
 	return peer.requestProofs(reqID, []ProofReq{req})
 }
 
-// Validate processes an ODR request reply message from the LES network
+// Valid processes an ODR request reply message from the LES network
 // returns true and stores results in memory if the message was a valid reply
 // to the request (implementation of LesOdrRequest)
 func (r *TrieRequest) Validate(db ethdb.Database, msg *Msg) error {
@@ -238,11 +238,11 @@ func (r *TrieRequest) Validate(db ethdb.Database, msg *Msg) error {
 }
 
 type CodeReq struct {
-	BHash          common.Hash
-	AccountAddress []byte
+	BHash  common.Hash
+	AccKey []byte
 }
 
-// CodeRequest is the ODR request type for node data (used for retrieving contract code), see LesOdrRequest interface
+// ODR request type for node data (used for retrieving contract code), see LesOdrRequest interface
 type CodeRequest light.CodeRequest
 
 // GetCost returns the cost of the given ODR request according to the serving
@@ -260,13 +260,13 @@ func (r *CodeRequest) CanSend(peer *serverPeer) bool {
 func (r *CodeRequest) Request(reqID uint64, peer *serverPeer) error {
 	peer.Log().Debug("Requesting code data", "hash", r.Hash)
 	req := CodeReq{
-		BHash:          r.Id.BlockHash,
-		AccountAddress: r.Id.AccountAddress,
+		BHash:  r.Id.BlockHash,
+		AccKey: r.Id.AccKey,
 	}
 	return peer.requestCode(reqID, []CodeReq{req})
 }
 
-// Validate processes an ODR request reply message from the LES network
+// Valid processes an ODR request reply message from the LES network
 // returns true and stores results in memory if the message was a valid reply
 // to the request (implementation of LesOdrRequest)
 func (r *CodeRequest) Validate(db ethdb.Database, msg *Msg) error {
@@ -295,9 +295,10 @@ const (
 	htCanonical = iota // Canonical hash trie
 	htBloomBits        // BloomBits trie
 
-	// helper trie auxiliary types
-	// htAuxNone = 1 ; deprecated number, used in les2/3 previously.
-	htAuxHeader = 2 // applicable for htCanonical, requests for relevant headers
+	// applicable for all helper trie requests
+	auxRoot = 1
+	// applicable for htCanonical
+	auxHeader = 2
 )
 
 type HelperTrieReq struct {
@@ -312,7 +313,7 @@ type HelperTrieResps struct { // describes all responses, not just a single one
 	AuxData [][]byte
 }
 
-// ChtRequest is the ODR request type for requesting headers by Canonical Hash Trie, see LesOdrRequest interface
+// ODR request type for requesting headers by Canonical Hash Trie, see LesOdrRequest interface
 type ChtRequest light.ChtRequest
 
 // GetCost returns the cost of the given ODR request according to the serving
@@ -338,12 +339,12 @@ func (r *ChtRequest) Request(reqID uint64, peer *serverPeer) error {
 		Type:    htCanonical,
 		TrieIdx: r.ChtNum,
 		Key:     encNum[:],
-		AuxReq:  htAuxHeader,
+		AuxReq:  auxHeader,
 	}
 	return peer.requestHelperTrieProofs(reqID, []HelperTrieReq{req})
 }
 
-// Validate processes an ODR request reply message from the LES network
+// Valid processes an ODR request reply message from the LES network
 // returns true and stores results in memory if the message was a valid reply
 // to the request (implementation of LesOdrRequest)
 func (r *ChtRequest) Validate(db ethdb.Database, msg *Msg) error {
@@ -400,7 +401,7 @@ type BloomReq struct {
 	BloomTrieNum, BitIdx, SectionIndex, FromLevel uint64
 }
 
-// BloomRequest is the ODR request type for requesting headers by Canonical Hash Trie, see LesOdrRequest interface
+// ODR request type for requesting headers by Canonical Hash Trie, see LesOdrRequest interface
 type BloomRequest light.BloomRequest
 
 // GetCost returns the cost of the given ODR request according to the serving
@@ -439,7 +440,7 @@ func (r *BloomRequest) Request(reqID uint64, peer *serverPeer) error {
 	return peer.requestHelperTrieProofs(reqID, reqs)
 }
 
-// Validate processes an ODR request reply message from the LES network
+// Valid processes an ODR request reply message from the LES network
 // returns true and stores results in memory if the message was a valid reply
 // to the request (implementation of LesOdrRequest)
 func (r *BloomRequest) Validate(db ethdb.Database, msg *Msg) error {
@@ -487,7 +488,7 @@ func (r *TxStatusRequest) GetCost(peer *serverPeer) uint64 {
 
 // CanSend tells if a certain peer is suitable for serving the given request
 func (r *TxStatusRequest) CanSend(peer *serverPeer) bool {
-	return peer.txHistory != txIndexDisabled
+	return peer.version >= lpv2
 }
 
 // Request sends an ODR request to the LES network (implementation of LesOdrRequest)
@@ -496,12 +497,13 @@ func (r *TxStatusRequest) Request(reqID uint64, peer *serverPeer) error {
 	return peer.requestTxStatus(reqID, r.Hashes)
 }
 
-// Validate processes an ODR request reply message from the LES network
+// Valid processes an ODR request reply message from the LES network
 // returns true and stores results in memory if the message was a valid reply
 // to the request (implementation of LesOdrRequest)
 func (r *TxStatusRequest) Validate(db ethdb.Database, msg *Msg) error {
 	log.Debug("Validating transaction status", "count", len(r.Hashes))
 
+	// Ensure we have a correct message with a single block body
 	if msg.MsgType != MsgTxStatus {
 		return errInvalidMessageType
 	}

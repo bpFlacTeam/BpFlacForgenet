@@ -20,15 +20,14 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
-	"errors"
 	"fmt"
 
 	"wodchain/crypto"
 	pcsc "github.com/gballet/go-libpcsclite"
+	"github.com/wsddn/go-ecdh"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/text/unicode/norm"
 )
@@ -64,19 +63,26 @@ type SecureChannelSession struct {
 // NewSecureChannelSession creates a new secure channel for the given card and public key.
 func NewSecureChannelSession(card *pcsc.Card, keyData []byte) (*SecureChannelSession, error) {
 	// Generate an ECDSA keypair for ourselves
-	key, err := crypto.GenerateKey()
+	gen := ecdh.NewEllipticECDH(crypto.S256())
+	private, public, err := gen.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	cardPublic, err := crypto.UnmarshalPubkey(keyData)
-	if err != nil {
-		return nil, fmt.Errorf("could not unmarshal public key from card: %v", err)
+
+	cardPublic, ok := gen.Unmarshal(keyData)
+	if !ok {
+		return nil, fmt.Errorf("could not unmarshal public key from card")
 	}
-	secret, _ := key.Curve.ScalarMult(cardPublic.X, cardPublic.Y, key.D.Bytes())
+
+	secret, err := gen.GenerateSharedSecret(private, cardPublic)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SecureChannelSession{
 		card:      card,
-		secret:    secret.Bytes(),
-		publicKey: elliptic.Marshal(crypto.S256(), key.PublicKey.X, key.PublicKey.Y),
+		secret:    secret,
+		publicKey: gen.Marshal(public),
 	}, nil
 }
 
@@ -126,7 +132,7 @@ func (s *SecureChannelSession) Pair(pairingPassword []byte) error {
 // Unpair disestablishes an existing pairing.
 func (s *SecureChannelSession) Unpair() error {
 	if s.PairingKey == nil {
-		return errors.New("cannot unpair: not paired")
+		return fmt.Errorf("cannot unpair: not paired")
 	}
 
 	_, err := s.transmitEncrypted(claSCWallet, insUnpair, s.PairingIndex, 0, []byte{})
@@ -142,7 +148,7 @@ func (s *SecureChannelSession) Unpair() error {
 // Open initializes the secure channel.
 func (s *SecureChannelSession) Open() error {
 	if s.iv != nil {
-		return errors.New("session already opened")
+		return fmt.Errorf("session already opened")
 	}
 
 	response, err := s.open()
@@ -179,7 +185,7 @@ func (s *SecureChannelSession) mutuallyAuthenticate() error {
 		return err
 	}
 	if response.Sw1 != 0x90 || response.Sw2 != 0x00 {
-		return fmt.Errorf("got unexpected response from MUTUALLY_AUTHENTICATE: %#x%x", response.Sw1, response.Sw2)
+		return fmt.Errorf("got unexpected response from MUTUALLY_AUTHENTICATE: 0x%x%x", response.Sw1, response.Sw2)
 	}
 
 	if len(response.Data) != scSecretLength {
@@ -216,7 +222,7 @@ func (s *SecureChannelSession) pair(p1 uint8, data []byte) (*responseAPDU, error
 // transmitEncrypted sends an encrypted message, and decrypts and returns the response.
 func (s *SecureChannelSession) transmitEncrypted(cla, ins, p1, p2 byte, data []byte) (*responseAPDU, error) {
 	if s.iv == nil {
-		return nil, errors.New("channel not open")
+		return nil, fmt.Errorf("channel not open")
 	}
 
 	data, err := s.encryptAPDU(data)
@@ -255,14 +261,14 @@ func (s *SecureChannelSession) transmitEncrypted(cla, ins, p1, p2 byte, data []b
 		return nil, err
 	}
 	if !bytes.Equal(s.iv, rmac) {
-		return nil, errors.New("invalid MAC in response")
+		return nil, fmt.Errorf("invalid MAC in response")
 	}
 
 	rapdu := &responseAPDU{}
 	rapdu.deserialize(plainData)
 
 	if rapdu.Sw1 != sw1Ok {
-		return nil, fmt.Errorf("unexpected response status Cla=%#x, Ins=%#x, Sw=%#x%x", cla, ins, rapdu.Sw1, rapdu.Sw2)
+		return nil, fmt.Errorf("unexpected response status Cla=0x%x, Ins=0x%x, Sw=0x%x%x", cla, ins, rapdu.Sw1, rapdu.Sw2)
 	}
 
 	return rapdu, nil
@@ -320,7 +326,7 @@ func unpad(data []byte, terminator byte) ([]byte, error) {
 			return nil, fmt.Errorf("expected end of padding, got %d", data[len(data)-i])
 		}
 	}
-	return nil, errors.New("expected end of padding, got 0")
+	return nil, fmt.Errorf("expected end of padding, got 0")
 }
 
 // updateIV is an internal method that updates the initialization vector after

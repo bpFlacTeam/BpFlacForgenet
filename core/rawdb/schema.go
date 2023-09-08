@@ -22,14 +22,13 @@ import (
 	"encoding/binary"
 
 	"wodchain/common"
-	"wodchain/crypto"
 	"wodchain/metrics"
 )
 
 // The fields below define the low level database schema prefixing.
 var (
-	// databaseVersionKey tracks the current database version.
-	databaseVersionKey = []byte("DatabaseVersion")
+	// databaseVerisionKey tracks the current database version.
+	databaseVerisionKey = []byte("DatabaseVersion")
 
 	// headHeaderKey tracks the latest known header's hash.
 	headHeaderKey = []byte("LastHeader")
@@ -40,23 +39,14 @@ var (
 	// headFastBlockKey tracks the latest known incomplete block's hash during fast sync.
 	headFastBlockKey = []byte("LastFast")
 
-	// headFinalizedBlockKey tracks the latest known finalized block hash.
-	headFinalizedBlockKey = []byte("LastFinalized")
-
-	// persistentStateIDKey tracks the id of latest stored state(for path-based only).
-	persistentStateIDKey = []byte("LastStateID")
-
 	// lastPivotKey tracks the last pivot block used by fast sync (to reenable on sethead).
 	lastPivotKey = []byte("LastPivot")
 
 	// fastTrieProgressKey tracks the number of trie entries imported during fast sync.
 	fastTrieProgressKey = []byte("TrieSync")
 
-	// snapshotDisabledKey flags that the snapshot should not be maintained due to initial sync.
-	snapshotDisabledKey = []byte("SnapshotDisabled")
-
-	// SnapshotRootKey tracks the hash of the last snapshot.
-	SnapshotRootKey = []byte("SnapshotRoot")
+	// snapshotRootKey tracks the hash of the last snapshot.
+	snapshotRootKey = []byte("SnapshotRoot")
 
 	// snapshotJournalKey tracks the in-memory diff layers across restarts.
 	snapshotJournalKey = []byte("SnapshotJournal")
@@ -67,29 +57,11 @@ var (
 	// snapshotRecoveryKey tracks the snapshot recovery marker across restarts.
 	snapshotRecoveryKey = []byte("SnapshotRecovery")
 
-	// snapshotSyncStatusKey tracks the snapshot sync status across restarts.
-	snapshotSyncStatusKey = []byte("SnapshotSyncStatus")
-
-	// skeletonSyncStatusKey tracks the skeleton sync status across restarts.
-	skeletonSyncStatusKey = []byte("SkeletonSyncStatus")
-
-	// trieJournalKey tracks the in-memory trie node layers across restarts.
-	trieJournalKey = []byte("TrieJournal")
-
 	// txIndexTailKey tracks the oldest block whose transactions have been indexed.
 	txIndexTailKey = []byte("TransactionIndexTail")
 
 	// fastTxLookupLimitKey tracks the transaction lookup limit during fast sync.
 	fastTxLookupLimitKey = []byte("FastTransactionLookupLimit")
-
-	// badBlockKey tracks the list of bad blocks seen by local
-	badBlockKey = []byte("InvalidBlock")
-
-	// uncleanShutdownKey tracks the list of local crashes
-	uncleanShutdownKey = []byte("unclean-shutdown") // config prefix for the db
-
-	// transitionStatusKey tracks the eth2 transition status.
-	transitionStatusKey = []byte("eth2-transition")
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
 	headerPrefix       = []byte("h") // headerPrefix + num (uint64 big endian) + hash -> header
@@ -104,34 +76,44 @@ var (
 	bloomBitsPrefix       = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
 	SnapshotAccountPrefix = []byte("a") // SnapshotAccountPrefix + account hash -> account trie value
 	SnapshotStoragePrefix = []byte("o") // SnapshotStoragePrefix + account hash + storage hash -> storage trie value
-	CodePrefix            = []byte("c") // CodePrefix + code hash -> account code
-	skeletonHeaderPrefix  = []byte("S") // skeletonHeaderPrefix + num (uint64 big endian) -> header
+	codePrefix            = []byte("c") // codePrefix + code hash -> account code
 
-	// Path-based storage scheme of merkle patricia trie.
-	trieNodeAccountPrefix = []byte("A") // trieNodeAccountPrefix + hexPath -> trie node
-	trieNodeStoragePrefix = []byte("O") // trieNodeStoragePrefix + accountHash + hexPath -> trie node
-	stateIDPrefix         = []byte("L") // stateIDPrefix + state root -> state id
+	preimagePrefix = []byte("secure-key-")      // preimagePrefix + hash -> preimage
+	configPrefix   = []byte("ethereum-config-") // config prefix for the db
 
-	PreimagePrefix = []byte("secure-key-")       // PreimagePrefix + hash -> preimage
-	configPrefix   = []byte("ethereum-config-")  // config prefix for the db
-	genesisPrefix  = []byte("ethereum-genesis-") // genesis state prefix for the db
-
-	// BloomBitsIndexPrefix is the data table of a chain indexer to track its progress
-	BloomBitsIndexPrefix = []byte("iB")
-
-	ChtPrefix           = []byte("chtRootV2-") // ChtPrefix + chtNum (uint64 big endian) -> trie root hash
-	ChtTablePrefix      = []byte("cht-")
-	ChtIndexTablePrefix = []byte("chtIndexV2-")
-
-	BloomTriePrefix      = []byte("bltRoot-") // BloomTriePrefix + bloomTrieNum (uint64 big endian) -> trie root hash
-	BloomTrieTablePrefix = []byte("blt-")
-	BloomTrieIndexPrefix = []byte("bltIndex-")
-
-	CliqueSnapshotPrefix = []byte("clique-")
+	// Chain index prefixes (use `i` + single byte to avoid mixing data types).
+	BloomBitsIndexPrefix = []byte("iB") // BloomBitsIndexPrefix is the data table of a chain indexer to track its progress
 
 	preimageCounter    = metrics.NewRegisteredCounter("db/preimage/total", nil)
 	preimageHitCounter = metrics.NewRegisteredCounter("db/preimage/hits", nil)
 )
+
+const (
+	// freezerHeaderTable indicates the name of the freezer header table.
+	freezerHeaderTable = "headers"
+
+	// freezerHashTable indicates the name of the freezer canonical hash table.
+	freezerHashTable = "hashes"
+
+	// freezerBodiesTable indicates the name of the freezer block body table.
+	freezerBodiesTable = "bodies"
+
+	// freezerReceiptTable indicates the name of the freezer receipts table.
+	freezerReceiptTable = "receipts"
+
+	// freezerDifficultyTable indicates the name of the freezer total difficulty table.
+	freezerDifficultyTable = "diffs"
+)
+
+// freezerNoSnappy configures whether compression is disabled for the ancient-tables.
+// Hashes and difficulties don't compress well.
+var freezerNoSnappy = map[string]bool{
+	freezerHeaderTable:     false,
+	freezerHashTable:       true,
+	freezerBodiesTable:     false,
+	freezerReceiptTable:    false,
+	freezerDifficultyTable: true,
+}
 
 // LegacyTxLookupEntry is the legacy TxLookupEntry definition with some unnecessary
 // fields.
@@ -213,26 +195,21 @@ func bloomBitsKey(bit uint, section uint64, hash common.Hash) []byte {
 	return key
 }
 
-// skeletonHeaderKey = skeletonHeaderPrefix + num (uint64 big endian)
-func skeletonHeaderKey(number uint64) []byte {
-	return append(skeletonHeaderPrefix, encodeBlockNumber(number)...)
-}
-
-// preimageKey = PreimagePrefix + hash
+// preimageKey = preimagePrefix + hash
 func preimageKey(hash common.Hash) []byte {
-	return append(PreimagePrefix, hash.Bytes()...)
+	return append(preimagePrefix, hash.Bytes()...)
 }
 
-// codeKey = CodePrefix + hash
+// codeKey = codePrefix + hash
 func codeKey(hash common.Hash) []byte {
-	return append(CodePrefix, hash.Bytes()...)
+	return append(codePrefix, hash.Bytes()...)
 }
 
 // IsCodeKey reports whether the given byte slice is the key of contract code,
 // if so return the raw code hash as well.
 func IsCodeKey(key []byte) (bool, []byte) {
-	if bytes.HasPrefix(key, CodePrefix) && len(key) == common.HashLength+len(CodePrefix) {
-		return true, key[len(CodePrefix):]
+	if bytes.HasPrefix(key, codePrefix) && len(key) == common.HashLength+len(codePrefix) {
+		return true, key[len(codePrefix):]
 	}
 	return false, nil
 }
@@ -240,69 +217,4 @@ func IsCodeKey(key []byte) (bool, []byte) {
 // configKey = configPrefix + hash
 func configKey(hash common.Hash) []byte {
 	return append(configPrefix, hash.Bytes()...)
-}
-
-// genesisStateSpecKey = genesisPrefix + hash
-func genesisStateSpecKey(hash common.Hash) []byte {
-	return append(genesisPrefix, hash.Bytes()...)
-}
-
-// stateIDKey = stateIDPrefix + root (32 bytes)
-func stateIDKey(root common.Hash) []byte {
-	return append(stateIDPrefix, root.Bytes()...)
-}
-
-// accountTrieNodeKey = trieNodeAccountPrefix + nodePath.
-func accountTrieNodeKey(path []byte) []byte {
-	return append(trieNodeAccountPrefix, path...)
-}
-
-// storageTrieNodeKey = trieNodeStoragePrefix + accountHash + nodePath.
-func storageTrieNodeKey(accountHash common.Hash, path []byte) []byte {
-	return append(append(trieNodeStoragePrefix, accountHash.Bytes()...), path...)
-}
-
-// IsLegacyTrieNode reports whether a provided database entry is a legacy trie
-// node. The characteristics of legacy trie node are:
-// - the key length is 32 bytes
-// - the key is the hash of val
-func IsLegacyTrieNode(key []byte, val []byte) bool {
-	if len(key) != common.HashLength {
-		return false
-	}
-	return bytes.Equal(key, crypto.Keccak256(val))
-}
-
-// IsAccountTrieNode reports whether a provided database entry is an account
-// trie node in path-based state scheme.
-func IsAccountTrieNode(key []byte) (bool, []byte) {
-	if !bytes.HasPrefix(key, trieNodeAccountPrefix) {
-		return false, nil
-	}
-	// The remaining key should only consist a hex node path
-	// whose length is in the range 0 to 64 (64 is excluded
-	// since leaves are always wrapped with shortNode).
-	if len(key) >= len(trieNodeAccountPrefix)+common.HashLength*2 {
-		return false, nil
-	}
-	return true, key[len(trieNodeAccountPrefix):]
-}
-
-// IsStorageTrieNode reports whether a provided database entry is a storage
-// trie node in path-based state scheme.
-func IsStorageTrieNode(key []byte) (bool, common.Hash, []byte) {
-	if !bytes.HasPrefix(key, trieNodeStoragePrefix) {
-		return false, common.Hash{}, nil
-	}
-	// The remaining key consists of 2 parts:
-	// - 32 bytes account hash
-	// - hex node path whose length is in the range 0 to 64
-	if len(key) < len(trieNodeStoragePrefix)+common.HashLength {
-		return false, common.Hash{}, nil
-	}
-	if len(key) >= len(trieNodeStoragePrefix)+common.HashLength+common.HashLength*2 {
-		return false, common.Hash{}, nil
-	}
-	accountHash := common.BytesToHash(key[len(trieNodeStoragePrefix) : len(trieNodeStoragePrefix)+common.HashLength])
-	return true, accountHash, key[len(trieNodeStoragePrefix)+common.HashLength:]
 }

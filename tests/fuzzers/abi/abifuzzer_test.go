@@ -23,7 +23,14 @@ import (
 // TestReplicate can be used to replicate crashers from the fuzzing tests.
 // Just replace testString with the data in .quoted
 func TestReplicate(t *testing.T) {
-	testString := "\x20\x20\x20\x20\x20\x20\x20\x20\x80\x00\x00\x00\x20\x20\x20\x20\x00"
+	testString := "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" +
+		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 \x00\x00\x00\x00\x00\x00\x00\x00" +
+		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" +
+		"\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00000000000" +
+		"00000000000000000000" +
+		"00000000000000000000" +
+		"00000001"
+
 	data := []byte(testString)
 	runFuzzer(data)
 }
@@ -36,7 +43,7 @@ func TestGenerateCorpus(t *testing.T) {
 		data := common.FromHex(corpusHex)
 		checksum := sha1.Sum(data)
 		outf := fmt.Sprintf("corpus/%x", checksum)
-		if err := os.WriteFile(outf, data, 0777); err != nil {
+		if err := ioutil.WriteFile(outf, data, 0777); err != nil {
 			panic(err)
 		}
 	*/

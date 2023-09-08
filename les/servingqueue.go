@@ -17,12 +17,12 @@
 package les
 
 import (
+	"sort"
 	"sync"
 	"sync/atomic"
 
 	"wodchain/common/mclock"
 	"wodchain/common/prque"
-	"golang.org/x/exp/slices"
 )
 
 // servingQueue allows running tasks in a limited number of threads and puts the
@@ -38,10 +38,10 @@ type servingQueue struct {
 	setThreadsCh            chan int
 
 	wg          sync.WaitGroup
-	threadCount int                               // number of currently running threads
-	queue       *prque.Prque[int64, *servingTask] // priority queue for waiting or suspended tasks
-	best        *servingTask                      // the highest priority task (not included in the queue)
-	suspendBias int64                             // priority bias against suspending an already running task
+	threadCount int          // number of currently running threads
+	queue       *prque.Prque // priority queue for waiting or suspended tasks
+	best        *servingTask // the highest priority task (not included in the queue)
+	suspendBias int64        // priority bias against suspending an already running task
 }
 
 // servingTask represents a request serving task. Tasks can be implemented to
@@ -123,7 +123,7 @@ func (t *servingTask) waitOrStop() bool {
 // newServingQueue returns a new servingQueue
 func newServingQueue(suspendBias int64, utilTarget float64) *servingQueue {
 	sq := &servingQueue{
-		queue:          prque.New[int64, *servingTask](nil),
+		queue:          prque.New(nil),
 		suspendBias:    suspendBias,
 		queueAddCh:     make(chan *servingTask, 100),
 		queueBestCh:    make(chan *servingTask),
@@ -159,46 +159,66 @@ func (sq *servingQueue) newTask(peer *clientPeer, maxTime uint64, priority int64
 // run tokens from the token channel and allow the corresponding tasks to run
 // without entering the priority queue.
 func (sq *servingQueue) threadController() {
-	defer sq.wg.Done()
 	for {
 		token := make(runToken)
 		select {
 		case best := <-sq.queueBestCh:
 			best.tokenCh <- token
 		case <-sq.stopThreadCh:
+			sq.wg.Done()
 			return
 		case <-sq.quit:
+			sq.wg.Done()
 			return
 		}
+		<-token
 		select {
 		case <-sq.stopThreadCh:
+			sq.wg.Done()
 			return
 		case <-sq.quit:
+			sq.wg.Done()
 			return
-		case <-token:
+		default:
 		}
 	}
 }
 
-// peerTasks lists the tasks received from a given peer when selecting peers to freeze
-type peerTasks struct {
-	peer     *clientPeer
-	list     []*servingTask
-	sumTime  uint64
-	priority float64
+type (
+	// peerTasks lists the tasks received from a given peer when selecting peers to freeze
+	peerTasks struct {
+		peer     *clientPeer
+		list     []*servingTask
+		sumTime  uint64
+		priority float64
+	}
+	// peerList is a sortable list of peerTasks
+	peerList []*peerTasks
+)
+
+func (l peerList) Len() int {
+	return len(l)
+}
+
+func (l peerList) Less(i, j int) bool {
+	return l[i].priority < l[j].priority
+}
+
+func (l peerList) Swap(i, j int) {
+	l[i], l[j] = l[j], l[i]
 }
 
 // freezePeers selects the peers with the worst priority queued tasks and freezes
 // them until burstTime goes under burstDropLimit or all peers are frozen
 func (sq *servingQueue) freezePeers() {
 	peerMap := make(map[*clientPeer]*peerTasks)
-	var peerList []*peerTasks
+	var peerList peerList
 	if sq.best != nil {
 		sq.queue.Push(sq.best, sq.best.priority)
 	}
 	sq.best = nil
 	for sq.queue.Size() > 0 {
-		task := sq.queue.PopItem()
+		task := sq.queue.PopItem().(*servingTask)
 		tasks := peerMap[task.peer]
 		if tasks == nil {
 			bufValue, bufLimit := task.peer.fcClient.BufferStatus()
@@ -215,15 +235,7 @@ func (sq *servingQueue) freezePeers() {
 		tasks.list = append(tasks.list, task)
 		tasks.sumTime += task.expTime
 	}
-	slices.SortFunc(peerList, func(a, b *peerTasks) int {
-		if a.priority < b.priority {
-			return -1
-		}
-		if a.priority > b.priority {
-			return 1
-		}
-		return 0
-	})
+	sort.Sort(peerList)
 	drop := true
 	for _, tasks := range peerList {
 		if drop {
@@ -243,7 +255,7 @@ func (sq *servingQueue) freezePeers() {
 		}
 	}
 	if sq.queue.Size() > 0 {
-		sq.best = sq.queue.PopItem()
+		sq.best = sq.queue.PopItem().(*servingTask)
 	}
 }
 
@@ -267,7 +279,7 @@ func (sq *servingQueue) updateRecentTime() {
 func (sq *servingQueue) addTask(task *servingTask) {
 	if sq.best == nil {
 		sq.best = task
-	} else if task.priority-sq.best.priority > 0 {
+	} else if task.priority > sq.best.priority {
 		sq.queue.Push(sq.best, sq.best.priority)
 		sq.best = task
 	} else {
@@ -286,7 +298,6 @@ func (sq *servingQueue) addTask(task *servingTask) {
 // and always tries to send the highest priority task to queueBestCh. Successfully sent
 // tasks are removed from the queue.
 func (sq *servingQueue) queueLoop() {
-	defer sq.wg.Done()
 	for {
 		if sq.best != nil {
 			expTime := sq.best.expTime
@@ -302,9 +313,10 @@ func (sq *servingQueue) queueLoop() {
 				if sq.queue.Size() == 0 {
 					sq.best = nil
 				} else {
-					sq.best = sq.queue.PopItem()
+					sq.best, _ = sq.queue.PopItem().(*servingTask)
 				}
 			case <-sq.quit:
+				sq.wg.Done()
 				return
 			}
 		} else {
@@ -312,6 +324,7 @@ func (sq *servingQueue) queueLoop() {
 			case task := <-sq.queueAddCh:
 				sq.addTask(task)
 			case <-sq.quit:
+				sq.wg.Done()
 				return
 			}
 		}
@@ -322,7 +335,6 @@ func (sq *servingQueue) queueLoop() {
 // of active thread controller goroutines.
 func (sq *servingQueue) threadCountLoop() {
 	var threadCountTarget int
-	defer sq.wg.Done()
 	for {
 		for threadCountTarget > sq.threadCount {
 			sq.wg.Add(1)
@@ -335,12 +347,14 @@ func (sq *servingQueue) threadCountLoop() {
 			case sq.stopThreadCh <- struct{}{}:
 				sq.threadCount--
 			case <-sq.quit:
+				sq.wg.Done()
 				return
 			}
 		} else {
 			select {
 			case threadCountTarget = <-sq.setThreadsCh:
 			case <-sq.quit:
+				sq.wg.Done()
 				return
 			}
 		}

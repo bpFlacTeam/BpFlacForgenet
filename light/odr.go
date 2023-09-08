@@ -24,7 +24,6 @@ import (
 	"wodchain/common"
 	"wodchain/core"
 	"wodchain/core/rawdb"
-	"wodchain/core/txpool"
 	"wodchain/core/types"
 	"wodchain/ethdb"
 )
@@ -43,7 +42,6 @@ type OdrBackend interface {
 	BloomTrieIndexer() *core.ChainIndexer
 	BloomIndexer() *core.ChainIndexer
 	Retrieve(ctx context.Context, req OdrRequest) error
-	RetrieveTxStatus(ctx context.Context, req *TxStatusRequest) error
 	IndexerConfig() *IndexerConfig
 }
 
@@ -54,35 +52,31 @@ type OdrRequest interface {
 
 // TrieID identifies a state or account storage trie
 type TrieID struct {
-	BlockHash      common.Hash
-	BlockNumber    uint64
-	StateRoot      common.Hash
-	Root           common.Hash
-	AccountAddress []byte
+	BlockHash, Root common.Hash
+	BlockNumber     uint64
+	AccKey          []byte
 }
 
 // StateTrieID returns a TrieID for a state trie belonging to a certain block
 // header.
 func StateTrieID(header *types.Header) *TrieID {
 	return &TrieID{
-		BlockHash:      header.Hash(),
-		BlockNumber:    header.Number.Uint64(),
-		StateRoot:      header.Root,
-		Root:           header.Root,
-		AccountAddress: nil,
+		BlockHash:   header.Hash(),
+		BlockNumber: header.Number.Uint64(),
+		AccKey:      nil,
+		Root:        header.Root,
 	}
 }
 
 // StorageTrieID returns a TrieID for a contract storage trie at a given account
 // of a given state trie. It also requires the root hash of the trie for
 // checking Merkle proofs.
-func StorageTrieID(state *TrieID, address common.Address, root common.Hash) *TrieID {
+func StorageTrieID(state *TrieID, addrHash, root common.Hash) *TrieID {
 	return &TrieID{
-		BlockHash:      state.BlockHash,
-		BlockNumber:    state.BlockNumber,
-		StateRoot:      state.StateRoot,
-		AccountAddress: address[:],
-		Root:           root,
+		BlockHash:   state.BlockHash,
+		BlockNumber: state.BlockNumber,
+		AccKey:      addrHash[:],
+		Root:        root,
 	}
 }
 
@@ -125,15 +119,18 @@ func (req *BlockRequest) StoreResult(db ethdb.Database) {
 
 // ReceiptsRequest is the ODR request type for retrieving receipts.
 type ReceiptsRequest struct {
-	Hash     common.Hash
-	Number   uint64
-	Header   *types.Header
-	Receipts types.Receipts
+	Untrusted bool // Indicator whether the result retrieved is trusted or not
+	Hash      common.Hash
+	Number    uint64
+	Header    *types.Header
+	Receipts  types.Receipts
 }
 
 // StoreResult stores the retrieved data in local database
 func (req *ReceiptsRequest) StoreResult(db ethdb.Database) {
-	rawdb.WriteReceipts(db, req.Hash, req.Number, req.Receipts)
+	if !req.Untrusted {
+		rawdb.WriteReceipts(db, req.Hash, req.Number, req.Receipts)
+	}
 }
 
 // ChtRequest is the ODR request type for retrieving header by Canonical Hash Trie
@@ -180,7 +177,7 @@ func (req *BloomRequest) StoreResult(db ethdb.Database) {
 
 // TxStatus describes the status of a transaction
 type TxStatus struct {
-	Status txpool.TxStatus
+	Status core.TxStatus
 	Lookup *rawdb.LegacyTxLookupEntry `rlp:"nil"`
 	Error  string
 }
