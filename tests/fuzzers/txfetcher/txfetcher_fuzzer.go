@@ -25,6 +25,7 @@ import (
 
 	"wodchain/common"
 	"wodchain/common/mclock"
+	"wodchain/core/txpool"
 	"wodchain/core/types"
 	"wodchain/eth/fetcher"
 )
@@ -79,7 +80,7 @@ func Fuzz(input []byte) int {
 
 	f := fetcher.NewTxFetcherForTests(
 		func(common.Hash) bool { return false },
-		func(txs []*types.Transaction) []error {
+		func(txs []*txpool.Transaction) []error {
 			return make([]error, len(txs))
 		},
 		func(string, []common.Hash) error { return nil },
