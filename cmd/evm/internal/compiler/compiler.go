@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"wodchain/core/asm"
+	"github.com/wodTeam/Wod_Chain/core/asm"
 )
 
 func Compile(fn string, src []byte, debug bool) (string, error) {

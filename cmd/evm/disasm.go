@@ -22,7 +22,7 @@ import (
 	"os"
 	"strings"
 
-	"wodchain/core/asm"
+	"github.com/wodTeam/Wod_Chain/core/asm"
 	"github.com/urfave/cli/v2"
 )
 

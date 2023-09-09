@@ -21,8 +21,8 @@ import (
 	"math/rand"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 )
 
 // This is the number of consecutive leaf requests that may fail before

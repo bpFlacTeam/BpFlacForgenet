@@ -19,15 +19,15 @@ package state
 import (
 	"bytes"
 
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/rlp"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/trie"
 )
 
 // NewStateSync create a new state trie download scheduler.
-func NewStateSync(root common.Hash, database ethdb.KeyValueReader, onLeaf func(keys [][]byte, leaf []byte) error, scheme string) *trie.Sync {
+func NewStateSync(root common.Hash, database ethdb.KeyValueReader, onLeaf func(keys [][]byte, leaf []byte) error) *trie.Sync {
 	// Register the storage slot callback if the external callback is specified.
 	var onSlot func(keys [][]byte, path []byte, leaf []byte, parent common.Hash, parentPath []byte) error
 	if onLeaf != nil {
@@ -52,6 +52,6 @@ func NewStateSync(root common.Hash, database ethdb.KeyValueReader, onLeaf func(k
 		syncer.AddCodeEntry(common.BytesToHash(obj.CodeHash), path, parent, parentPath)
 		return nil
 	}
-	syncer = trie.NewSync(root, database, onAccount, scheme)
+	syncer = trie.NewSync(root, database, onAccount)
 	return syncer
 }

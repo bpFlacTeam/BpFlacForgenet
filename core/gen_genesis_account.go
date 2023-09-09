@@ -7,9 +7,9 @@ import (
 	"errors"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/common/math"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/common/math"
 )
 
 var _ = (*genesisAccountMarshaling)(nil)

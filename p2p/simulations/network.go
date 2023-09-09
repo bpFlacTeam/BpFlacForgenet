@@ -26,11 +26,11 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/event"
-	"wodchain/log"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/simulations/adapters"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/simulations/adapters"
 )
 
 var DialBanTimeout = 200 * time.Millisecond
@@ -646,8 +646,8 @@ func (net *Network) getConn(oneID, otherID enode.ID) *Conn {
 	return net.Conns[i]
 }
 
-// InitConn retrieves the connection model for the connection between
-// peers 'oneID' and 'otherID', or creates a new one if it does not exist
+// InitConn(one, other) retrieves the connection model for the connection between
+// peers one and other, or creates a new one if it does not exist
 // the order of nodes does not matter, i.e., Conn(i,j) == Conn(j, i)
 // it checks if the connection is already up, and if the nodes are running
 // NOTE:

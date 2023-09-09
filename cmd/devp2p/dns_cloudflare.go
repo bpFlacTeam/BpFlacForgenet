@@ -18,13 +18,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/cloudflare/cloudflare-go"
-	"wodchain/log"
-	"wodchain/p2p/dnsdisc"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/dnsdisc"
 	"github.com/urfave/cli/v2"
 )
 
@@ -49,7 +48,7 @@ type cloudflareClient struct {
 func newCloudflareClient(ctx *cli.Context) *cloudflareClient {
 	token := ctx.String(cloudflareTokenFlag.Name)
 	if token == "" {
-		exit(errors.New("need cloudflare API token to proceed"))
+		exit(fmt.Errorf("need cloudflare API token to proceed"))
 	}
 	api, err := cloudflare.NewWithAPIToken(token)
 	if err != nil {
@@ -127,16 +126,11 @@ func (c *cloudflareClient) uploadRecords(name string, records map[string]string)
 	}
 
 	// Iterate over the new records and inject anything missing.
-	log.Info("Updating DNS entries")
-	created := 0
-	updated := 0
-	skipped := 0
 	for path, val := range records {
 		old, exists := existing[path]
 		if !exists {
 			// Entry is unknown, push a new one to Cloudflare.
-			log.Debug(fmt.Sprintf("Creating %s = %q", path, val))
-			created++
+			log.Info(fmt.Sprintf("Creating %s = %q", path, val))
 			ttl := rootTTL
 			if path != name {
 				ttl = treeNodeTTLCloudflare // Max TTL permitted by Cloudflare
@@ -146,32 +140,26 @@ func (c *cloudflareClient) uploadRecords(name string, records map[string]string)
 		} else if old.Content != val {
 			// Entry already exists, only change its content.
 			log.Info(fmt.Sprintf("Updating %s from %q to %q", path, old.Content, val))
-			updated++
 			old.Content = val
 			err = c.UpdateDNSRecord(context.Background(), c.zoneID, old.ID, old)
 		} else {
-			skipped++
 			log.Debug(fmt.Sprintf("Skipping %s = %q", path, val))
 		}
 		if err != nil {
 			return fmt.Errorf("failed to publish %s: %v", path, err)
 		}
 	}
-	log.Info("Updated DNS entries", "new", created, "updated", updated, "untouched", skipped)
+
 	// Iterate over the old records and delete anything stale.
-	deleted := 0
-	log.Info("Deleting stale DNS entries")
 	for path, entry := range existing {
 		if _, ok := records[path]; ok {
 			continue
 		}
 		// Stale entry, nuke it.
-		log.Debug(fmt.Sprintf("Deleting %s = %q", path, entry.Content))
-		deleted++
+		log.Info(fmt.Sprintf("Deleting %s = %q", path, entry.Content))
 		if err := c.DeleteDNSRecord(context.Background(), c.zoneID, entry.ID); err != nil {
 			return fmt.Errorf("failed to delete %s: %v", path, err)
 		}
 	}
-	log.Info("Deleted stale DNS entries", "count", deleted)
 	return nil
 }

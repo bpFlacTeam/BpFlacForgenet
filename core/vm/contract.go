@@ -19,7 +19,7 @@ package vm
 import (
 	"math/big"
 
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 	"github.com/holiman/uint256"
 )
 

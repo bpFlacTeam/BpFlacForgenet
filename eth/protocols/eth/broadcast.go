@@ -19,8 +19,8 @@ package eth
 import (
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
 )
 
 const (
@@ -81,8 +81,8 @@ func (p *Peer) broadcastTransactions() {
 			)
 			for i := 0; i < len(queue) && size < maxTxPacketSize; i++ {
 				if tx := p.txpool.Get(queue[i]); tx != nil {
-					txs = append(txs, tx.Tx)
-					size += common.StorageSize(tx.Tx.Size())
+					txs = append(txs, tx)
+					size += tx.Size()
 				}
 				hashesCount++
 			}
@@ -142,17 +142,13 @@ func (p *Peer) announceTransactions() {
 		if done == nil && len(queue) > 0 {
 			// Pile transaction hashes until we reach our allowed network limit
 			var (
-				count        int
-				pending      []common.Hash
-				pendingTypes []byte
-				pendingSizes []uint32
-				size         common.StorageSize
+				count   int
+				pending []common.Hash
+				size    common.StorageSize
 			)
 			for count = 0; count < len(queue) && size < maxTxPacketSize; count++ {
-				if tx := p.txpool.Get(queue[count]); tx != nil {
+				if p.txpool.Get(queue[count]) != nil {
 					pending = append(pending, queue[count])
-					pendingTypes = append(pendingTypes, tx.Tx.Type())
-					pendingSizes = append(pendingSizes, uint32(tx.Tx.Size()))
 					size += common.HashLength
 				}
 			}
@@ -163,16 +159,9 @@ func (p *Peer) announceTransactions() {
 			if len(pending) > 0 {
 				done = make(chan struct{})
 				go func() {
-					if p.version >= ETH68 {
-						if err := p.sendPooledTransactionHashes68(pending, pendingTypes, pendingSizes); err != nil {
-							fail <- err
-							return
-						}
-					} else {
-						if err := p.sendPooledTransactionHashes66(pending); err != nil {
-							fail <- err
-							return
-						}
+					if err := p.sendPooledTransactionHashes(pending); err != nil {
+						fail <- err
+						return
 					}
 					close(done)
 					p.Log().Trace("Sent transaction announcements", "count", len(pending))

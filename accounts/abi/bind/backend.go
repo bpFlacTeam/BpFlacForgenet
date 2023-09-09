@@ -21,15 +21,15 @@ import (
 	"errors"
 	"math/big"
 
-	"wodchain"
-	"wodchain/common"
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
 )
 
 var (
 	// ErrNoCode is returned by call and transact operations for which the requested
 	// recipient contract to operate on does not exist in the state db or does not
-	// have any code associated with it (i.e. self-destructed).
+	// have any code associated with it (i.e. suicided).
 	ErrNoCode = errors.New("no contract code at given address")
 
 	// ErrNoPendingState is raised when attempting to perform a pending state action

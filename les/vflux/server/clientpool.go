@@ -21,14 +21,14 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/ethdb"
-	"wodchain/les/utils"
-	"wodchain/les/vflux"
-	"wodchain/log"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/nodestate"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/les/vflux"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/nodestate"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 var (
@@ -53,7 +53,7 @@ var (
 // each client can have several minutes of connection time.
 //
 // Balances of disconnected clients are stored in nodeDB including positive balance
-// and negative balance. Both positive balance and negative balance will decrease
+// and negative banalce. Boeth positive balance and negative balance will decrease
 // exponentially. If the balance is low enough, then the record will be dropped.
 type ClientPool struct {
 	*priorityPool

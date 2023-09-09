@@ -19,10 +19,10 @@ package simulations
 import (
 	"testing"
 
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/enr"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 // NoopService is the service that does not do anything

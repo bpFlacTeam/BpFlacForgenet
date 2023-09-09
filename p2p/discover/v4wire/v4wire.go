@@ -27,11 +27,11 @@ import (
 	"net"
 	"time"
 
-	"wodchain/common/math"
-	"wodchain/crypto"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/enr"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // RPC packet types
@@ -60,7 +60,7 @@ type (
 	Pong struct {
 		// This field should mirror the UDP envelope address
 		// of the ping packet, which provides a way to discover the
-		// external address (after NAT).
+		// the external address (after NAT).
 		To         Endpoint
 		ReplyTok   []byte // This contains the hash of the ping packet.
 		Expiration uint64 // Absolute timestamp at which the packet becomes invalid.
@@ -102,7 +102,7 @@ type (
 	}
 )
 
-// MaxNeighbors is the maximum number of neighbor nodes in a Neighbors packet.
+// This number is the maximum number of neighbor nodes in a Neighbors packet.
 const MaxNeighbors = 12
 
 // This code computes the MaxNeighbors constant value.
@@ -161,9 +161,8 @@ func NewEndpoint(addr *net.UDPAddr, tcpPort uint16) Endpoint {
 }
 
 type Packet interface {
-	// Name is the name of the package, for logging purposes.
+	// packet name and type for logging purposes.
 	Name() string
-	// Kind is the packet type, for logging purposes.
 	Kind() byte
 }
 

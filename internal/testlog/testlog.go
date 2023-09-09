@@ -21,7 +21,7 @@ import (
 	"sync"
 	"testing"
 
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // Handler returns a log handler which logs to the unit test log of t.

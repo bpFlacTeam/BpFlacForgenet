@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/les/utils"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/les/utils"
 )
 
 // requestDistributor implements a mechanism that distributes requests to

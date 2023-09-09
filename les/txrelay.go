@@ -21,9 +21,9 @@ import (
 	"math/rand"
 	"sync"
 
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 type lesTxRelay struct {

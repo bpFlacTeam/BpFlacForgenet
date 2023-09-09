@@ -17,7 +17,12 @@
 package t8ntool
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/urfave/cli/v2"
+	"github.com/wodTeam/Wod_Chain/core/vm"
+	"github.com/wodTeam/Wod_Chain/tests"
 )
 
 var (
@@ -107,10 +112,6 @@ var (
 		Name:  "input.ommers",
 		Usage: "`stdin` or file name of where to find the list of ommer header RLPs to use.",
 	}
-	InputWithdrawalsFlag = &cli.StringFlag{
-		Name:  "input.withdrawals",
-		Usage: "`stdin` or file name of where to find the list of withdrawals to use.",
-	}
 	InputTxsRlpFlag = &cli.StringFlag{
 		Name:  "input.txs",
 		Usage: "`stdin` or file name of where to find the transactions list in RLP form.",
@@ -120,10 +121,23 @@ var (
 		Name:  "seal.clique",
 		Usage: "Seal block with Clique. `stdin` or file name of where to find the Clique sealing data.",
 	}
+	SealEthashFlag = &cli.BoolFlag{
+		Name:  "seal.ethash",
+		Usage: "Seal block with ethash.",
+	}
+	SealEthashDirFlag = &cli.StringFlag{
+		Name:  "seal.ethash.dir",
+		Usage: "Path to ethash DAG. If none exists, a new DAG will be generated.",
+	}
+	SealEthashModeFlag = &cli.StringFlag{
+		Name:  "seal.ethash.mode",
+		Usage: "Defines the type and amount of PoW verification an ethash engine makes.",
+		Value: "normal",
+	}
 	RewardFlag = &cli.Int64Flag{
 		Name:  "state.reward",
 		Usage: "Mining reward. Set to -1 to disable",
-		Value: 0,
+		Value: -1,
 	}
 	ChainIDFlag = &cli.Int64Flag{
 		Name:  "state.chainid",
@@ -131,8 +145,15 @@ var (
 		Value: 1,
 	}
 	ForknameFlag = &cli.StringFlag{
-		Name:  "state.fork",
-		Usage: "",
+		Name: "state.fork",
+		Usage: fmt.Sprintf("Name of ruleset to use."+
+			"\n\tAvailable forknames:"+
+			"\n\t    %v"+
+			"\n\tAvailable extra eips:"+
+			"\n\t    %v"+
+			"\n\tSyntax <forkname>(+ExtraEip)",
+			strings.Join(tests.AvailableForks(), "\n\t    "),
+			strings.Join(vm.ActivateableEips(), ", ")),
 		Value: "GrayGlacier",
 	}
 	VerbosityFlag = &cli.IntFlag{

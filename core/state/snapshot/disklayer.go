@@ -21,12 +21,11 @@ import (
 	"sync"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/rlp"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/trie"
 )
 
 // diskLayer is a low level persistent snapshot built on top of a key-value store.
@@ -66,7 +65,7 @@ func (dl *diskLayer) Stale() bool {
 
 // Account directly retrieves the account associated with a particular hash in
 // the snapshot slim data format.
-func (dl *diskLayer) Account(hash common.Hash) (*types.SlimAccount, error) {
+func (dl *diskLayer) Account(hash common.Hash) (*Account, error) {
 	data, err := dl.AccountRLP(hash)
 	if err != nil {
 		return nil, err
@@ -74,7 +73,7 @@ func (dl *diskLayer) Account(hash common.Hash) (*types.SlimAccount, error) {
 	if len(data) == 0 { // can be both nil and []byte{}
 		return nil, nil
 	}
-	account := new(types.SlimAccount)
+	account := new(Account)
 	if err := rlp.DecodeBytes(data, account); err != nil {
 		panic(err)
 	}

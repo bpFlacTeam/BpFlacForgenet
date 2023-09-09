@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -28,9 +27,9 @@ import (
 	"strconv"
 	"strings"
 
-	"wodchain/p2p/enode"
-	"wodchain/p2p/enr"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/rlp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -49,7 +48,7 @@ func enrdump(ctx *cli.Context) error {
 	var source string
 	if file := ctx.String(fileFlag.Name); file != "" {
 		if ctx.NArg() != 0 {
-			return errors.New("can't dump record from command-line argument in -file mode")
+			return fmt.Errorf("can't dump record from command-line argument in -file mode")
 		}
 		var b []byte
 		var err error
@@ -65,7 +64,7 @@ func enrdump(ctx *cli.Context) error {
 	} else if ctx.NArg() == 1 {
 		source = ctx.Args().First()
 	} else {
-		return errors.New("need record as argument")
+		return fmt.Errorf("need record as argument")
 	}
 
 	r, err := parseRecord(source)

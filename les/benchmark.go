@@ -17,25 +17,24 @@
 package les
 
 import (
-	crand "crypto/rand"
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"sync"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/mclock"
-	"wodchain/core/rawdb"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/les/flowcontrol"
-	"wodchain/log"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/params"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/les/flowcontrol"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // requestBenchmark is an interface for different randomized request generators
@@ -59,7 +58,7 @@ func (b *benchmarkBlockHeaders) init(h *serverHandler, count int) error {
 	b.offset = 0
 	b.randMax = h.blockchain.CurrentHeader().Number.Int64() + 1 - d
 	if b.randMax < 0 {
-		return errors.New("chain is too short")
+		return fmt.Errorf("chain is too short")
 	}
 	if b.reverse {
 		b.offset = d
@@ -115,9 +114,9 @@ func (b *benchmarkProofsOrCode) init(h *serverHandler, count int) error {
 
 func (b *benchmarkProofsOrCode) request(peer *serverPeer, index int) error {
 	key := make([]byte, 32)
-	crand.Read(key)
+	rand.Read(key)
 	if b.code {
-		return peer.requestCode(0, []CodeReq{{BHash: b.headHash, AccountAddress: key}})
+		return peer.requestCode(0, []CodeReq{{BHash: b.headHash, AccKey: key}})
 	}
 	return peer.requestProofs(0, []ProofReq{{BHash: b.headHash, Key: key}})
 }
@@ -137,7 +136,7 @@ func (b *benchmarkHelperTrie) init(h *serverHandler, count int) error {
 		b.headNum = b.sectionCount*params.CHTFrequency - 1
 	}
 	if b.sectionCount == 0 {
-		return errors.New("no processed sections available")
+		return fmt.Errorf("no processed sections available")
 	}
 	return nil
 }
@@ -177,7 +176,7 @@ func (b *benchmarkTxSend) init(h *serverHandler, count int) error {
 
 	for i := range b.txs {
 		data := make([]byte, txSizeCostLimit)
-		crand.Read(data)
+		rand.Read(data)
 		tx, err := types.SignTx(types.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), data), signer, key)
 		if err != nil {
 			panic(err)
@@ -201,7 +200,7 @@ func (b *benchmarkTxStatus) init(h *serverHandler, count int) error {
 
 func (b *benchmarkTxStatus) request(peer *serverPeer, index int) error {
 	var hash common.Hash
-	crand.Read(hash[:])
+	rand.Read(hash[:])
 	return peer.requestTxStatus(0, []common.Hash{hash})
 }
 
@@ -279,7 +278,7 @@ func (h *serverHandler) measure(setup *benchmarkSetup, count int) error {
 	clientMeteredPipe := &meteredPipe{rw: clientPipe}
 	serverMeteredPipe := &meteredPipe{rw: serverPipe}
 	var id enode.ID
-	crand.Read(id[:])
+	rand.Read(id[:])
 
 	peer1 := newServerPeer(lpv2, NetworkId, false, p2p.NewPeer(id, "client", nil), clientMeteredPipe)
 	peer2 := newClientPeer(lpv2, NetworkId, p2p.NewPeer(id, "server", nil), serverMeteredPipe)
@@ -338,7 +337,7 @@ func (h *serverHandler) measure(setup *benchmarkSetup, count int) error {
 	case <-h.closeCh:
 		clientPipe.Close()
 		serverPipe.Close()
-		return errors.New("Benchmark cancelled")
+		return fmt.Errorf("Benchmark cancelled")
 	}
 
 	setup.totalTime += time.Duration(mclock.Now() - start)

@@ -34,9 +34,9 @@ import (
 	"net"
 	"time"
 
-	"wodchain/crypto"
-	"wodchain/crypto/ecies"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/crypto/ecies"
+	"github.com/wodTeam/Wod_Chain/rlp"
 	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
 )

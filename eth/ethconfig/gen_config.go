@@ -3,56 +3,65 @@
 package ethconfig
 
 import (
+	"math/big"
 	"time"
 
-	"wodchain/common"
-	"wodchain/core"
-	"wodchain/core/txpool/blobpool"
-	"wodchain/core/txpool/legacypool"
-	"wodchain/eth/downloader"
-	"wodchain/eth/gasprice"
-	"wodchain/miner"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/consensus/ethash"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/eth/downloader"
+	"github.com/wodTeam/Wod_Chain/eth/gasprice"
+	"github.com/wodTeam/Wod_Chain/miner"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 // MarshalTOML marshals as TOML.
 func (c Config) MarshalTOML() (interface{}, error) {
 	type Config struct {
-		Genesis                 *core.Genesis `toml:",omitempty"`
-		NetworkId               uint64
-		SyncMode                downloader.SyncMode
-		EthDiscoveryURLs        []string
-		SnapDiscoveryURLs       []string
-		NoPruning               bool
-		NoPrefetch              bool
-		TxLookupLimit           uint64                 `toml:",omitempty"`
-		RequiredBlocks          map[uint64]common.Hash `toml:"-"`
-		LightServ               int                    `toml:",omitempty"`
-		LightIngress            int                    `toml:",omitempty"`
-		LightEgress             int                    `toml:",omitempty"`
-		LightPeers              int                    `toml:",omitempty"`
-		LightNoPrune            bool                   `toml:",omitempty"`
-		LightNoSyncServe        bool                   `toml:",omitempty"`
-		SkipBcVersionCheck      bool                   `toml:"-"`
-		DatabaseHandles         int                    `toml:"-"`
-		DatabaseCache           int
-		DatabaseFreezer         string
-		TrieCleanCache          int
-		TrieDirtyCache          int
-		TrieTimeout             time.Duration
-		SnapshotCache           int
-		Preimages               bool
-		FilterLogCacheSize      int
-		Miner                   miner.Config
-		TxPool                  legacypool.Config
-		BlobPool                blobpool.Config
-		GPO                     gasprice.Config
-		EnablePreimageRecording bool
-		DocRoot                 string `toml:"-"`
-		RPCGasCap               uint64
-		RPCEVMTimeout           time.Duration
-		RPCTxFeeCap             float64
-		OverrideCancun          *uint64 `toml:",omitempty"`
-		OverrideVerkle          *uint64 `toml:",omitempty"`
+		Genesis                               *core.Genesis `toml:",omitempty"`
+		NetworkId                             uint64
+		SyncMode                              downloader.SyncMode
+		EthDiscoveryURLs                      []string
+		SnapDiscoveryURLs                     []string
+		NoPruning                             bool
+		NoPrefetch                            bool
+		TxLookupLimit                         uint64                 `toml:",omitempty"`
+		RequiredBlocks                        map[uint64]common.Hash `toml:"-"`
+		LightServ                             int                    `toml:",omitempty"`
+		LightIngress                          int                    `toml:",omitempty"`
+		LightEgress                           int                    `toml:",omitempty"`
+		LightPeers                            int                    `toml:",omitempty"`
+		LightNoPrune                          bool                   `toml:",omitempty"`
+		LightNoSyncServe                      bool                   `toml:",omitempty"`
+		SyncFromCheckpoint                    bool                   `toml:",omitempty"`
+		UltraLightServers                     []string               `toml:",omitempty"`
+		UltraLightFraction                    int                    `toml:",omitempty"`
+		UltraLightOnlyAnnounce                bool                   `toml:",omitempty"`
+		SkipBcVersionCheck                    bool                   `toml:"-"`
+		DatabaseHandles                       int                    `toml:"-"`
+		DatabaseCache                         int
+		DatabaseFreezer                       string
+		TrieCleanCache                        int
+		TrieCleanCacheJournal                 string        `toml:",omitempty"`
+		TrieCleanCacheRejournal               time.Duration `toml:",omitempty"`
+		TrieDirtyCache                        int
+		TrieTimeout                           time.Duration
+		SnapshotCache                         int
+		Preimages                             bool
+		FilterLogCacheSize                    int
+		Miner                                 miner.Config
+		Ethash                                ethash.Config
+		TxPool                                core.TxPoolConfig
+		GPO                                   gasprice.Config
+		EnablePreimageRecording               bool
+		DocRoot                               string `toml:"-"`
+		RPCGasCap                             uint64
+		RPCEVMTimeout                         time.Duration
+		RPCTxFeeCap                           float64
+		Checkpoint                            *params.TrustedCheckpoint      `toml:",omitempty"`
+		CheckpointOracle                      *params.CheckpointOracleConfig `toml:",omitempty"`
+		OverrideTerminalTotalDifficulty       *big.Int                       `toml:",omitempty"`
+		OverrideTerminalTotalDifficultyPassed *bool                          `toml:",omitempty"`
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -70,69 +79,85 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.LightPeers = c.LightPeers
 	enc.LightNoPrune = c.LightNoPrune
 	enc.LightNoSyncServe = c.LightNoSyncServe
+	enc.SyncFromCheckpoint = c.SyncFromCheckpoint
+	enc.UltraLightServers = c.UltraLightServers
+	enc.UltraLightFraction = c.UltraLightFraction
+	enc.UltraLightOnlyAnnounce = c.UltraLightOnlyAnnounce
 	enc.SkipBcVersionCheck = c.SkipBcVersionCheck
 	enc.DatabaseHandles = c.DatabaseHandles
 	enc.DatabaseCache = c.DatabaseCache
 	enc.DatabaseFreezer = c.DatabaseFreezer
 	enc.TrieCleanCache = c.TrieCleanCache
+	enc.TrieCleanCacheJournal = c.TrieCleanCacheJournal
+	enc.TrieCleanCacheRejournal = c.TrieCleanCacheRejournal
 	enc.TrieDirtyCache = c.TrieDirtyCache
 	enc.TrieTimeout = c.TrieTimeout
 	enc.SnapshotCache = c.SnapshotCache
 	enc.Preimages = c.Preimages
 	enc.FilterLogCacheSize = c.FilterLogCacheSize
 	enc.Miner = c.Miner
+	enc.Ethash = c.Ethash
 	enc.TxPool = c.TxPool
-	enc.BlobPool = c.BlobPool
 	enc.GPO = c.GPO
 	enc.EnablePreimageRecording = c.EnablePreimageRecording
 	enc.DocRoot = c.DocRoot
 	enc.RPCGasCap = c.RPCGasCap
 	enc.RPCEVMTimeout = c.RPCEVMTimeout
 	enc.RPCTxFeeCap = c.RPCTxFeeCap
-	enc.OverrideCancun = c.OverrideCancun
-	enc.OverrideVerkle = c.OverrideVerkle
+	enc.Checkpoint = c.Checkpoint
+	enc.CheckpointOracle = c.CheckpointOracle
+	enc.OverrideTerminalTotalDifficulty = c.OverrideTerminalTotalDifficulty
+	enc.OverrideTerminalTotalDifficultyPassed = c.OverrideTerminalTotalDifficultyPassed
 	return &enc, nil
 }
 
 // UnmarshalTOML unmarshals from TOML.
 func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	type Config struct {
-		Genesis                 *core.Genesis `toml:",omitempty"`
-		NetworkId               *uint64
-		SyncMode                *downloader.SyncMode
-		EthDiscoveryURLs        []string
-		SnapDiscoveryURLs       []string
-		NoPruning               *bool
-		NoPrefetch              *bool
-		TxLookupLimit           *uint64                `toml:",omitempty"`
-		RequiredBlocks          map[uint64]common.Hash `toml:"-"`
-		LightServ               *int                   `toml:",omitempty"`
-		LightIngress            *int                   `toml:",omitempty"`
-		LightEgress             *int                   `toml:",omitempty"`
-		LightPeers              *int                   `toml:",omitempty"`
-		LightNoPrune            *bool                  `toml:",omitempty"`
-		LightNoSyncServe        *bool                  `toml:",omitempty"`
-		SkipBcVersionCheck      *bool                  `toml:"-"`
-		DatabaseHandles         *int                   `toml:"-"`
-		DatabaseCache           *int
-		DatabaseFreezer         *string
-		TrieCleanCache          *int
-		TrieDirtyCache          *int
-		TrieTimeout             *time.Duration
-		SnapshotCache           *int
-		Preimages               *bool
-		FilterLogCacheSize      *int
-		Miner                   *miner.Config
-		TxPool                  *legacypool.Config
-		BlobPool                *blobpool.Config
-		GPO                     *gasprice.Config
-		EnablePreimageRecording *bool
-		DocRoot                 *string `toml:"-"`
-		RPCGasCap               *uint64
-		RPCEVMTimeout           *time.Duration
-		RPCTxFeeCap             *float64
-		OverrideCancun          *uint64 `toml:",omitempty"`
-		OverrideVerkle          *uint64 `toml:",omitempty"`
+		Genesis                               *core.Genesis `toml:",omitempty"`
+		NetworkId                             *uint64
+		SyncMode                              *downloader.SyncMode
+		EthDiscoveryURLs                      []string
+		SnapDiscoveryURLs                     []string
+		NoPruning                             *bool
+		NoPrefetch                            *bool
+		TxLookupLimit                         *uint64                `toml:",omitempty"`
+		RequiredBlocks                        map[uint64]common.Hash `toml:"-"`
+		LightServ                             *int                   `toml:",omitempty"`
+		LightIngress                          *int                   `toml:",omitempty"`
+		LightEgress                           *int                   `toml:",omitempty"`
+		LightPeers                            *int                   `toml:",omitempty"`
+		LightNoPrune                          *bool                  `toml:",omitempty"`
+		LightNoSyncServe                      *bool                  `toml:",omitempty"`
+		SyncFromCheckpoint                    *bool                  `toml:",omitempty"`
+		UltraLightServers                     []string               `toml:",omitempty"`
+		UltraLightFraction                    *int                   `toml:",omitempty"`
+		UltraLightOnlyAnnounce                *bool                  `toml:",omitempty"`
+		SkipBcVersionCheck                    *bool                  `toml:"-"`
+		DatabaseHandles                       *int                   `toml:"-"`
+		DatabaseCache                         *int
+		DatabaseFreezer                       *string
+		TrieCleanCache                        *int
+		TrieCleanCacheJournal                 *string        `toml:",omitempty"`
+		TrieCleanCacheRejournal               *time.Duration `toml:",omitempty"`
+		TrieDirtyCache                        *int
+		TrieTimeout                           *time.Duration
+		SnapshotCache                         *int
+		Preimages                             *bool
+		FilterLogCacheSize                    *int
+		Miner                                 *miner.Config
+		Ethash                                *ethash.Config
+		TxPool                                *core.TxPoolConfig
+		GPO                                   *gasprice.Config
+		EnablePreimageRecording               *bool
+		DocRoot                               *string `toml:"-"`
+		RPCGasCap                             *uint64
+		RPCEVMTimeout                         *time.Duration
+		RPCTxFeeCap                           *float64
+		Checkpoint                            *params.TrustedCheckpoint      `toml:",omitempty"`
+		CheckpointOracle                      *params.CheckpointOracleConfig `toml:",omitempty"`
+		OverrideTerminalTotalDifficulty       *big.Int                       `toml:",omitempty"`
+		OverrideTerminalTotalDifficultyPassed *bool                          `toml:",omitempty"`
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -183,6 +208,18 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.LightNoSyncServe != nil {
 		c.LightNoSyncServe = *dec.LightNoSyncServe
 	}
+	if dec.SyncFromCheckpoint != nil {
+		c.SyncFromCheckpoint = *dec.SyncFromCheckpoint
+	}
+	if dec.UltraLightServers != nil {
+		c.UltraLightServers = dec.UltraLightServers
+	}
+	if dec.UltraLightFraction != nil {
+		c.UltraLightFraction = *dec.UltraLightFraction
+	}
+	if dec.UltraLightOnlyAnnounce != nil {
+		c.UltraLightOnlyAnnounce = *dec.UltraLightOnlyAnnounce
+	}
 	if dec.SkipBcVersionCheck != nil {
 		c.SkipBcVersionCheck = *dec.SkipBcVersionCheck
 	}
@@ -197,6 +234,12 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.TrieCleanCache != nil {
 		c.TrieCleanCache = *dec.TrieCleanCache
+	}
+	if dec.TrieCleanCacheJournal != nil {
+		c.TrieCleanCacheJournal = *dec.TrieCleanCacheJournal
+	}
+	if dec.TrieCleanCacheRejournal != nil {
+		c.TrieCleanCacheRejournal = *dec.TrieCleanCacheRejournal
 	}
 	if dec.TrieDirtyCache != nil {
 		c.TrieDirtyCache = *dec.TrieDirtyCache
@@ -216,11 +259,11 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.Miner != nil {
 		c.Miner = *dec.Miner
 	}
+	if dec.Ethash != nil {
+		c.Ethash = *dec.Ethash
+	}
 	if dec.TxPool != nil {
 		c.TxPool = *dec.TxPool
-	}
-	if dec.BlobPool != nil {
-		c.BlobPool = *dec.BlobPool
 	}
 	if dec.GPO != nil {
 		c.GPO = *dec.GPO
@@ -240,11 +283,17 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.RPCTxFeeCap != nil {
 		c.RPCTxFeeCap = *dec.RPCTxFeeCap
 	}
-	if dec.OverrideCancun != nil {
-		c.OverrideCancun = dec.OverrideCancun
+	if dec.Checkpoint != nil {
+		c.Checkpoint = dec.Checkpoint
 	}
-	if dec.OverrideVerkle != nil {
-		c.OverrideVerkle = dec.OverrideVerkle
+	if dec.CheckpointOracle != nil {
+		c.CheckpointOracle = dec.CheckpointOracle
+	}
+	if dec.OverrideTerminalTotalDifficulty != nil {
+		c.OverrideTerminalTotalDifficulty = dec.OverrideTerminalTotalDifficulty
+	}
+	if dec.OverrideTerminalTotalDifficultyPassed != nil {
+		c.OverrideTerminalTotalDifficultyPassed = dec.OverrideTerminalTotalDifficultyPassed
 	}
 	return nil
 }

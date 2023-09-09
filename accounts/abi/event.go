@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"wodchain/common"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/crypto"
 )
 
 // Event is an event potentially triggered by the EVM's LOG mechanism. The Event

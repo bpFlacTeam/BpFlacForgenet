@@ -20,9 +20,9 @@ import (
 	"crypto/rand"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/core/types"
 )
 
 // largeNumber returns a very large big.Int.

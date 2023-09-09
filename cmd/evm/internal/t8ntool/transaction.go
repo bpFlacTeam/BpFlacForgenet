@@ -24,15 +24,14 @@ import (
 	"os"
 	"strings"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/core"
-	"wodchain/core/types"
-	"wodchain/log"
-	"wodchain/params"
-	"wodchain/rlp"
-	"wodchain/tests"
-
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/tests"
 	"github.com/urfave/cli/v2"
 )
 
@@ -113,7 +112,7 @@ func Transaction(ctx *cli.Context) error {
 			return NewError(ErrorIO, errors.New("only rlp supported"))
 		}
 	}
-	signer := types.MakeSigner(chainConfig, new(big.Int), 0)
+	signer := types.MakeSigner(chainConfig, new(big.Int))
 	// We now have the transactions in 'body', which is supposed to be an
 	// rlp list of transactions
 	it, err := rlp.NewListIterator([]byte(body))
@@ -141,7 +140,7 @@ func Transaction(ctx *cli.Context) error {
 		}
 		// Check intrinsic gas
 		if gas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil,
-			chainConfig.IsHomestead(new(big.Int)), chainConfig.IsIstanbul(new(big.Int)), chainConfig.IsShanghai(new(big.Int), 0)); err != nil {
+			chainConfig.IsHomestead(new(big.Int)), chainConfig.IsIstanbul(new(big.Int))); err != nil {
 			r.Error = err
 			results = append(results, r)
 			continue
@@ -171,10 +170,6 @@ func Transaction(ctx *cli.Context) error {
 			r.Error = errors.New("gas * gasPrice exceeds 256 bits")
 		case new(big.Int).Mul(tx.GasFeeCap(), new(big.Int).SetUint64(tx.Gas())).BitLen() > 256:
 			r.Error = errors.New("gas * maxFeePerGas exceeds 256 bits")
-		}
-		// Check whether the init code size has been exceeded.
-		if chainConfig.IsShanghai(new(big.Int), 0) && tx.To() == nil && len(tx.Data()) > params.MaxInitCodeSize {
-			r.Error = errors.New("max initcode size exceeded")
 		}
 		results = append(results, r)
 	}

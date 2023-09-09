@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
 )
 
 // Subscription represents a stream of events. The carrier of the events is typically a

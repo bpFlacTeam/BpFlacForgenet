@@ -19,9 +19,9 @@ package rawdb
 import (
 	"encoding/binary"
 
-	"wodchain/common"
-	"wodchain/ethdb"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // ReadSnapshotDisabled retrieves if the snapshot maintenance is disabled.

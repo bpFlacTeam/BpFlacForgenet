@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"wodchain/common/hexutil"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/crypto"
 )
 
 type bytesBacked interface {

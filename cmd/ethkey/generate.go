@@ -22,9 +22,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"wodchain/accounts/keystore"
-	"wodchain/cmd/utils"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/cmd/utils"
+	"github.com/wodTeam/Wod_Chain/crypto"
 	"github.com/google/uuid"
 	"github.com/urfave/cli/v2"
 )

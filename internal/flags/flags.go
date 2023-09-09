@@ -23,10 +23,10 @@ import (
 	"math/big"
 	"os"
 	"os/user"
-	"path/filepath"
+	"path"
 	"strings"
 
-	"wodchain/common/math"
+	"github.com/wodTeam/Wod_Chain/common/math"
 	"github.com/urfave/cli/v2"
 )
 
@@ -314,16 +314,12 @@ func GlobalBig(ctx *cli.Context, name string) *big.Int {
 // 3. cleans the path, e.g. /a/b/../c -> /a/c
 // Note, it has limitations, e.g. ~someuser/tmp will not be expanded
 func expandPath(p string) string {
-	// Named pipes are not file paths on windows, ignore
-	if strings.HasPrefix(p, `\\.\pipe`) {
-		return p
-	}
 	if strings.HasPrefix(p, "~/") || strings.HasPrefix(p, "~\\") {
 		if home := HomeDir(); home != "" {
 			p = home + p[1:]
 		}
 	}
-	return filepath.Clean(os.ExpandEnv(p))
+	return path.Clean(os.ExpandEnv(p))
 }
 
 func HomeDir() string {

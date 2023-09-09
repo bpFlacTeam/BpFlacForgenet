@@ -22,15 +22,15 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/log"
-	"wodchain/metrics"
-	"wodchain/rlp"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/metrics"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/trie"
 )
 
 var (
@@ -103,7 +103,7 @@ type Snapshot interface {
 
 	// Account directly retrieves the account associated with a particular hash in
 	// the snapshot slim data format.
-	Account(hash common.Hash) (*types.SlimAccount, error)
+	Account(hash common.Hash) (*Account, error)
 
 	// AccountRLP directly retrieves the account RLP associated with a particular
 	// hash in the snapshot slim data format.
@@ -148,14 +148,6 @@ type snapshot interface {
 	StorageIterator(account common.Hash, seek common.Hash) (StorageIterator, bool)
 }
 
-// Config includes the configurations for snapshots.
-type Config struct {
-	CacheSize  int  // Megabytes permitted to use for read caches
-	Recovery   bool // Indicator that the snapshots is in the recovery mode
-	NoBuild    bool // Indicator that the snapshots generation is disallowed
-	AsyncBuild bool // The snapshot generation is allowed to be constructed asynchronously
-}
-
 // Tree is an Ethereum state snapshot tree. It consists of one persistent base
 // layer backed by a key-value store, on top of which arbitrarily many in-memory
 // diff layers are topped. The memory diffs can form a tree with branching, but
@@ -166,9 +158,9 @@ type Config struct {
 // storage data to avoid expensive multi-level trie lookups; and to allow sorted,
 // cheap iteration of the account/storage tries for sync aid.
 type Tree struct {
-	config Config                   // Snapshots configurations
 	diskdb ethdb.KeyValueStore      // Persistent database to store the snapshot
 	triedb *trie.Database           // In-memory cache to access the trie through
+	cache  int                      // Megabytes permitted to use for read caches
 	layers map[common.Hash]snapshot // Collection of all known layers
 	lock   sync.RWMutex
 
@@ -187,32 +179,30 @@ type Tree struct {
 // If the memory layers in the journal do not match the disk layer (e.g. there is
 // a gap) or the journal is missing, there are two repair cases:
 //
-//   - if the 'recovery' parameter is true, memory diff-layers and the disk-layer
-//     will all be kept. This case happens when the snapshot is 'ahead' of the
-//     state trie.
-//   - otherwise, the entire snapshot is considered invalid and will be recreated on
-//     a background thread.
-func New(config Config, diskdb ethdb.KeyValueStore, triedb *trie.Database, root common.Hash) (*Tree, error) {
+// - if the 'recovery' parameter is true, all memory diff-layers will be discarded.
+//   This case happens when the snapshot is 'ahead' of the state trie.
+// - otherwise, the entire snapshot is considered invalid and will be recreated on
+//   a background thread.
+func New(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, root common.Hash, async bool, rebuild bool, recovery bool) (*Tree, error) {
 	// Create a new, empty snapshot tree
 	snap := &Tree{
-		config: config,
 		diskdb: diskdb,
 		triedb: triedb,
+		cache:  cache,
 		layers: make(map[common.Hash]snapshot),
 	}
+	if !async {
+		defer snap.waitBuild()
+	}
 	// Attempt to load a previously persisted snapshot and rebuild one if failed
-	head, disabled, err := loadSnapshot(diskdb, triedb, root, config.CacheSize, config.Recovery, config.NoBuild)
+	head, disabled, err := loadSnapshot(diskdb, triedb, cache, root, recovery)
 	if disabled {
 		log.Warn("Snapshot maintenance disabled (syncing)")
 		return snap, nil
 	}
-	// Create the building waiter iff the background generation is allowed
-	if !config.NoBuild && !config.AsyncBuild {
-		defer snap.waitBuild()
-	}
 	if err != nil {
-		log.Warn("Failed to load snapshot", "err", err)
-		if !config.NoBuild {
+		if rebuild {
+			log.Warn("Failed to load snapshot, regenerating", "err", err)
 			snap.Rebuild(root)
 			return snap, nil
 		}
@@ -272,7 +262,7 @@ func (t *Tree) Disable() {
 		case *diffLayer:
 			// If the layer is a simple diff, simply mark as stale
 			layer.lock.Lock()
-			layer.stale.Store(true)
+			atomic.StoreUint32(&layer.stale, 1)
 			layer.lock.Unlock()
 
 		default:
@@ -726,7 +716,7 @@ func (t *Tree) Rebuild(root common.Hash) {
 		case *diffLayer:
 			// If the layer is a simple diff, simply mark as stale
 			layer.lock.Lock()
-			layer.stale.Store(true)
+			atomic.StoreUint32(&layer.stale, 1)
 			layer.lock.Unlock()
 
 		default:
@@ -737,7 +727,7 @@ func (t *Tree) Rebuild(root common.Hash) {
 	// generator will run a wiper first if there's not one running right now.
 	log.Info("Rebuilding state snapshot")
 	t.layers = map[common.Hash]snapshot{
-		root: generateSnapshot(t.diskdb, t.triedb, t.config.CacheSize, root),
+		root: generateSnapshot(t.diskdb, t.triedb, t.cache, root),
 	}
 }
 
@@ -776,14 +766,14 @@ func (t *Tree) Verify(root common.Hash) error {
 	}
 	defer acctIt.Release()
 
-	got, err := generateTrieRoot(nil, "", acctIt, common.Hash{}, stackTrieGenerate, func(db ethdb.KeyValueWriter, accountHash, codeHash common.Hash, stat *generateStats) (common.Hash, error) {
+	got, err := generateTrieRoot(nil, acctIt, common.Hash{}, stackTrieGenerate, func(db ethdb.KeyValueWriter, accountHash, codeHash common.Hash, stat *generateStats) (common.Hash, error) {
 		storageIt, err := t.StorageIterator(root, accountHash, common.Hash{})
 		if err != nil {
 			return common.Hash{}, err
 		}
 		defer storageIt.Release()
 
-		hash, err := generateTrieRoot(nil, "", storageIt, accountHash, stackTrieGenerate, nil, stat, false)
+		hash, err := generateTrieRoot(nil, storageIt, accountHash, stackTrieGenerate, nil, stat, false)
 		if err != nil {
 			return common.Hash{}, err
 		}
@@ -845,7 +835,7 @@ func (t *Tree) generating() (bool, error) {
 	return layer.genMarker != nil, nil
 }
 
-// DiskRoot is a external helper function to return the disk layer root.
+// diskRoot is a external helper function to return the disk layer root.
 func (t *Tree) DiskRoot() common.Hash {
 	t.lock.Lock()
 	defer t.lock.Unlock()

@@ -21,18 +21,24 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"sort"
 
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/ethdb/memorydb"
-	"wodchain/trie"
-	"golang.org/x/exp/slices"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb/memorydb"
+	"github.com/wodTeam/Wod_Chain/trie"
 )
 
 type kv struct {
 	k, v []byte
 	t    bool
 }
+
+type entrySlice []*kv
+
+func (p entrySlice) Len() int           { return len(p) }
+func (p entrySlice) Less(i, j int) bool { return bytes.Compare(p[i].k, p[j].k) < 0 }
+func (p entrySlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 type fuzzer struct {
 	input     io.Reader
@@ -63,8 +69,8 @@ func (f *fuzzer) randomTrie(n int) (*trie.Trie, map[string]*kv) {
 	for i := byte(0); i < byte(size); i++ {
 		value := &kv{common.LeftPadBytes([]byte{i}, 32), []byte{i}, false}
 		value2 := &kv{common.LeftPadBytes([]byte{i + 10}, 32), []byte{i}, false}
-		trie.MustUpdate(value.k, value.v)
-		trie.MustUpdate(value2.k, value2.v)
+		trie.Update(value.k, value.v)
+		trie.Update(value2.k, value2.v)
 		vals[string(value.k)] = value
 		vals[string(value2.k)] = value2
 	}
@@ -76,7 +82,7 @@ func (f *fuzzer) randomTrie(n int) (*trie.Trie, map[string]*kv) {
 		k := f.randBytes(32)
 		v := f.randBytes(20)
 		value := &kv{k, v, false}
-		trie.MustUpdate(k, v)
+		trie.Update(k, v)
 		vals[string(k)] = value
 		if f.exhausted {
 			return nil, nil
@@ -91,16 +97,14 @@ func (f *fuzzer) fuzz() int {
 	if f.exhausted {
 		return 0 // input too short
 	}
-	var entries []*kv
+	var entries entrySlice
 	for _, kv := range vals {
 		entries = append(entries, kv)
 	}
 	if len(entries) <= 1 {
 		return 0
 	}
-	slices.SortFunc(entries, func(a, b *kv) int {
-		return bytes.Compare(a.k, b.k)
-	})
+	sort.Sort(entries)
 
 	var ok = 0
 	for {
@@ -113,10 +117,10 @@ func (f *fuzzer) fuzz() int {
 			break
 		}
 		proof := memorydb.New()
-		if err := tr.Prove(entries[start].k, proof); err != nil {
+		if err := tr.Prove(entries[start].k, 0, proof); err != nil {
 			panic(fmt.Sprintf("Failed to prove the first node %v", err))
 		}
-		if err := tr.Prove(entries[end-1].k, proof); err != nil {
+		if err := tr.Prove(entries[end-1].k, 0, proof); err != nil {
 			panic(fmt.Sprintf("Failed to prove the last node %v", err))
 		}
 		var keys [][]byte
@@ -175,16 +179,12 @@ func (f *fuzzer) fuzz() int {
 	return ok
 }
 
-// Fuzz is the fuzzing entry-point.
 // The function must return
-//
-//   - 1 if the fuzzer should increase priority of the
-//     given input during subsequent fuzzing (for example, the input is lexically
-//     correct and was parsed successfully);
-//   - -1 if the input must not be added to corpus even if gives new coverage; and
-//   - 0 otherwise
-//
-// other values are reserved for future use.
+// 1 if the fuzzer should increase priority of the
+//   given input during subsequent fuzzing (for example, the input is lexically
+//   correct and was parsed successfully);
+// -1 if the input must not be added to corpus even if gives new coverage; and
+// 0 otherwise; other values are reserved for future use.
 func Fuzz(input []byte) int {
 	if len(input) < 100 {
 		return 0

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/crypto"
 )
 
 // FunctionType represents different types of functions a contract might have.

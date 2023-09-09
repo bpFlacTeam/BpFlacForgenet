@@ -17,8 +17,8 @@
 package ethapi
 
 import (
-	"wodchain/common"
-	"wodchain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
 )
 
 // DbGet returns the raw value of a key stored in the database.

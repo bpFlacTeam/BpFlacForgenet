@@ -17,9 +17,9 @@
 package eth
 
 import (
-	"wodchain/core"
-	"wodchain/eth/protocols/snap"
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/snap"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 )
 
 // snapHandler implements the snap.Backend interface to handle the various network

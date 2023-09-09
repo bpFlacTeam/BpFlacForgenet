@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"hash"
 
-	"wodchain/common/math"
-	"wodchain/crypto"
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 	"golang.org/x/crypto/hkdf"
 )
 

@@ -17,7 +17,7 @@
 package snap
 
 import (
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // enrEntry is the ENR entry which advertises `snap` protocol on the discovery.

@@ -16,7 +16,7 @@
 
 package core
 
-import "wodchain/common"
+import "github.com/wodTeam/Wod_Chain/common"
 
 // BadHashes represent a set of manually tracked bad hashes (usually hard forks)
 var BadHashes = map[common.Hash]bool{

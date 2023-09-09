@@ -18,24 +18,24 @@ package les
 
 import (
 	"errors"
-	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/mclock"
-	"wodchain/core"
-	"wodchain/core/forkid"
-	"wodchain/core/rawdb"
-	"wodchain/core/txpool"
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/les/flowcontrol"
-	"wodchain/light"
-	"wodchain/log"
-	"wodchain/metrics"
-	"wodchain/p2p"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/forkid"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/les/flowcontrol"
+	"github.com/wodTeam/Wod_Chain/light"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/metrics"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/trie"
 )
 
 const (
@@ -62,7 +62,7 @@ type serverHandler struct {
 	forkFilter forkid.Filter
 	blockchain *core.BlockChain
 	chainDb    ethdb.Database
-	txpool     *txpool.TxPool
+	txpool     *core.TxPool
 	server     *LesServer
 
 	closeCh chan struct{}  // Channel used to exit all background routines of handler.
@@ -73,7 +73,7 @@ type serverHandler struct {
 	addTxsSync bool
 }
 
-func newServerHandler(server *LesServer, blockchain *core.BlockChain, chainDb ethdb.Database, txpool *txpool.TxPool, synced func() bool) *serverHandler {
+func newServerHandler(server *LesServer, blockchain *core.BlockChain, chainDb ethdb.Database, txpool *core.TxPool, synced func() bool) *serverHandler {
 	handler := &serverHandler{
 		forkFilter: forkid.NewFilter(blockchain),
 		server:     server,
@@ -116,7 +116,7 @@ func (h *serverHandler) handle(p *clientPeer) error {
 		hash   = head.Hash()
 		number = head.Number.Uint64()
 		td     = h.blockchain.GetTd(hash, number)
-		forkID = forkid.NewID(h.blockchain.Config(), h.blockchain.Genesis().Hash(), number, head.Time)
+		forkID = forkid.NewID(h.blockchain.Config(), h.blockchain.Genesis().Hash(), h.blockchain.CurrentBlock().NumberU64())
 	)
 	if err := p.Handshake(td, hash, number, h.blockchain.Genesis().Hash(), forkID, h.forkFilter, h.server); err != nil {
 		p.Log().Debug("Light Ethereum handshake failed", "err", err)
@@ -163,8 +163,8 @@ func (h *serverHandler) handle(p *clientPeer) error {
 	}()
 
 	// Mark the peer as being served.
-	p.serving.Store(true)
-	defer p.serving.Store(false)
+	atomic.StoreUint32(&p.serving, 1)
+	defer atomic.StoreUint32(&p.serving, 0)
 
 	// Spawn a main loop to handle all incoming messages.
 	for {
@@ -343,7 +343,7 @@ func (h *serverHandler) BlockChain() *core.BlockChain {
 }
 
 // TxPool implements serverBackend
-func (h *serverHandler) TxPool() *txpool.TxPool {
+func (h *serverHandler) TxPool() *core.TxPool {
 	return h.txpool
 }
 
@@ -358,19 +358,20 @@ func (h *serverHandler) AddTxsSync() bool {
 }
 
 // getAccount retrieves an account from the state based on root.
-func getAccount(triedb *trie.Database, root common.Hash, addr common.Address) (types.StateAccount, error) {
-	trie, err := trie.NewStateTrie(trie.StateTrieID(root), triedb)
+func getAccount(triedb *trie.Database, root, hash common.Hash) (types.StateAccount, error) {
+	trie, err := trie.New(common.Hash{}, root, triedb)
 	if err != nil {
 		return types.StateAccount{}, err
 	}
-	acc, err := trie.GetAccount(addr)
+	blob, err := trie.TryGet(hash[:])
 	if err != nil {
 		return types.StateAccount{}, err
 	}
-	if acc == nil {
-		return types.StateAccount{}, fmt.Errorf("account %#x is not present", addr)
+	var acc types.StateAccount
+	if err = rlp.DecodeBytes(blob, &acc); err != nil {
+		return types.StateAccount{}, err
 	}
-	return *acc, nil
+	return acc, nil
 }
 
 // GetHelperTrie returns the post-processed trie root for the given trie ID and section index
@@ -382,15 +383,15 @@ func (h *serverHandler) GetHelperTrie(typ uint, index uint64) *trie.Trie {
 	switch typ {
 	case htCanonical:
 		sectionHead := rawdb.ReadCanonicalHash(h.chainDb, (index+1)*h.server.iConfig.ChtSize-1)
-		root, prefix = light.GetChtRoot(h.chainDb, index, sectionHead), string(rawdb.ChtTablePrefix)
+		root, prefix = light.GetChtRoot(h.chainDb, index, sectionHead), light.ChtTablePrefix
 	case htBloomBits:
 		sectionHead := rawdb.ReadCanonicalHash(h.chainDb, (index+1)*h.server.iConfig.BloomTrieSize-1)
-		root, prefix = light.GetBloomTrieRoot(h.chainDb, index, sectionHead), string(rawdb.BloomTrieTablePrefix)
+		root, prefix = light.GetBloomTrieRoot(h.chainDb, index, sectionHead), light.BloomTrieTablePrefix
 	}
 	if root == (common.Hash{}) {
 		return nil
 	}
-	trie, _ := trie.New(trie.TrieID(root), trie.NewDatabase(rawdb.NewTable(h.chainDb, prefix)))
+	trie, _ := trie.New(common.Hash{}, root, trie.NewDatabase(rawdb.NewTable(h.chainDb, prefix)))
 	return trie
 }
 

@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 // VerifyGaslimit verifies the header gas limit according increase/decrease

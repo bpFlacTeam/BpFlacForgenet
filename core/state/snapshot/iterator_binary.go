@@ -19,7 +19,7 @@ package snapshot
 import (
 	"bytes"
 
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 // binaryIterator is a simplistic iterator to step over the accounts or storage

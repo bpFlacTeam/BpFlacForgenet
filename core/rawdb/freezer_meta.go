@@ -20,8 +20,8 @@ import (
 	"io"
 	"os"
 
-	"wodchain/log"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 const freezerVersion = 1 // The initial version tag of freezer table metadata

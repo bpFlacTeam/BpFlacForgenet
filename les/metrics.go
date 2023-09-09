@@ -17,8 +17,8 @@
 package les
 
 import (
-	"wodchain/metrics"
-	"wodchain/p2p"
+	"github.com/wodTeam/Wod_Chain/metrics"
+	"github.com/wodTeam/Wod_Chain/p2p"
 )
 
 var (

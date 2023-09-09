@@ -19,17 +19,16 @@ package core
 import (
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/consensus"
-	"wodchain/core/rawdb"
-	"wodchain/core/state"
-	"wodchain/core/state/snapshot"
-	"wodchain/core/types"
-	"wodchain/core/vm"
-	"wodchain/event"
-	"wodchain/params"
-	"wodchain/rlp"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/consensus"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/state"
+	"github.com/wodTeam/Wod_Chain/core/state/snapshot"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/core/vm"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
@@ -40,26 +39,26 @@ func (bc *BlockChain) CurrentHeader() *types.Header {
 
 // CurrentBlock retrieves the current head block of the canonical chain. The
 // block is retrieved from the blockchain's internal cache.
-func (bc *BlockChain) CurrentBlock() *types.Header {
-	return bc.currentBlock.Load()
+func (bc *BlockChain) CurrentBlock() *types.Block {
+	return bc.currentBlock.Load().(*types.Block)
 }
 
-// CurrentSnapBlock retrieves the current snap-sync head block of the canonical
+// CurrentFastBlock retrieves the current fast-sync head block of the canonical
 // chain. The block is retrieved from the blockchain's internal cache.
-func (bc *BlockChain) CurrentSnapBlock() *types.Header {
-	return bc.currentSnapBlock.Load()
+func (bc *BlockChain) CurrentFastBlock() *types.Block {
+	return bc.currentFastBlock.Load().(*types.Block)
 }
 
-// CurrentFinalBlock retrieves the current finalized block of the canonical
+// CurrentFinalizedBlock retrieves the current finalized block of the canonical
 // chain. The block is retrieved from the blockchain's internal cache.
-func (bc *BlockChain) CurrentFinalBlock() *types.Header {
-	return bc.currentFinalBlock.Load()
+func (bc *BlockChain) CurrentFinalizedBlock() *types.Block {
+	return bc.currentFinalizedBlock.Load().(*types.Block)
 }
 
 // CurrentSafeBlock retrieves the current safe block of the canonical
 // chain. The block is retrieved from the blockchain's internal cache.
-func (bc *BlockChain) CurrentSafeBlock() *types.Header {
-	return bc.currentSafeBlock.Load()
+func (bc *BlockChain) CurrentSafeBlock() *types.Block {
+	return bc.currentSafeBlock.Load().(*types.Block)
 }
 
 // HasHeader checks if a block header is present in the database or not, caching
@@ -97,7 +96,8 @@ func (bc *BlockChain) GetHeadersFrom(number, count uint64) []rlp.RawValue {
 func (bc *BlockChain) GetBody(hash common.Hash) *types.Body {
 	// Short circuit if the body's already in the cache, retrieve otherwise
 	if cached, ok := bc.bodyCache.Get(hash); ok {
-		return cached
+		body := cached.(*types.Body)
+		return body
 	}
 	number := bc.hc.GetBlockNumber(hash)
 	if number == nil {
@@ -117,7 +117,7 @@ func (bc *BlockChain) GetBody(hash common.Hash) *types.Body {
 func (bc *BlockChain) GetBodyRLP(hash common.Hash) rlp.RawValue {
 	// Short circuit if the body's already in the cache, retrieve otherwise
 	if cached, ok := bc.bodyRLPCache.Get(hash); ok {
-		return cached
+		return cached.(rlp.RawValue)
 	}
 	number := bc.hc.GetBlockNumber(hash)
 	if number == nil {
@@ -159,7 +159,7 @@ func (bc *BlockChain) HasFastBlock(hash common.Hash, number uint64) bool {
 func (bc *BlockChain) GetBlock(hash common.Hash, number uint64) *types.Block {
 	// Short circuit if the block's already in the cache, retrieve otherwise
 	if block, ok := bc.blockCache.Get(hash); ok {
-		return block
+		return block.(*types.Block)
 	}
 	block := rawdb.ReadBlock(bc.db, hash, number)
 	if block == nil {
@@ -211,17 +211,13 @@ func (bc *BlockChain) GetBlocksFromHash(hash common.Hash, n int) (blocks []*type
 // GetReceiptsByHash retrieves the receipts for all transactions in a given block.
 func (bc *BlockChain) GetReceiptsByHash(hash common.Hash) types.Receipts {
 	if receipts, ok := bc.receiptsCache.Get(hash); ok {
-		return receipts
+		return receipts.(types.Receipts)
 	}
 	number := rawdb.ReadHeaderNumber(bc.db, hash)
 	if number == nil {
 		return nil
 	}
-	header := bc.GetHeader(hash, *number)
-	if header == nil {
-		return nil
-	}
-	receipts := rawdb.ReadReceipts(bc.db, hash, *number, header.Time, bc.chainConfig)
+	receipts := rawdb.ReadReceipts(bc.db, hash, *number, bc.chainConfig)
 	if receipts == nil {
 		return nil
 	}
@@ -259,7 +255,7 @@ func (bc *BlockChain) GetAncestor(hash common.Hash, number, ancestor uint64, max
 func (bc *BlockChain) GetTransactionLookup(hash common.Hash) *rawdb.LegacyTxLookupEntry {
 	// Short circuit if the txlookup already in the cache, retrieve otherwise
 	if lookup, exist := bc.txLookupCache.Get(hash); exist {
-		return lookup
+		return lookup.(*rawdb.LegacyTxLookupEntry)
 	}
 	tx, blockHash, blockNumber, txIndex := rawdb.ReadTransaction(bc.db, hash)
 	if tx == nil {
@@ -299,6 +295,12 @@ func (bc *BlockChain) TrieNode(hash common.Hash) ([]byte, error) {
 	return bc.stateCache.TrieDB().Node(hash)
 }
 
+// ContractCode retrieves a blob of data associated with a contract hash
+// either from ephemeral in-memory cache, or from persistent storage.
+func (bc *BlockChain) ContractCode(hash common.Hash) ([]byte, error) {
+	return bc.stateCache.ContractCode(common.Hash{}, hash)
+}
+
 // ContractCodeWithPrefix retrieves a blob of data associated with a contract
 // hash either from ephemeral in-memory cache, or from persistent storage.
 //
@@ -306,16 +308,14 @@ func (bc *BlockChain) TrieNode(hash common.Hash) ([]byte, error) {
 // new code scheme.
 func (bc *BlockChain) ContractCodeWithPrefix(hash common.Hash) ([]byte, error) {
 	type codeReader interface {
-		ContractCodeWithPrefix(address common.Address, codeHash common.Hash) ([]byte, error)
+		ContractCodeWithPrefix(addrHash, codeHash common.Hash) ([]byte, error)
 	}
-	// TODO(rjl493456442) The associated account address is also required
-	// in Verkle scheme. Fix it once snap-sync is supported for Verkle.
-	return bc.stateCache.(codeReader).ContractCodeWithPrefix(common.Address{}, hash)
+	return bc.stateCache.(codeReader).ContractCodeWithPrefix(common.Hash{}, hash)
 }
 
 // State returns a new mutable state based on the current HEAD block.
 func (bc *BlockChain) State() (*state.StateDB, error) {
-	return bc.StateAt(bc.CurrentBlock().Root)
+	return bc.StateAt(bc.CurrentBlock().Root())
 }
 
 // StateAt returns a new mutable state based on a particular point in time.
@@ -351,7 +351,7 @@ func (bc *BlockChain) StateCache() state.Database {
 
 // GasLimit returns the gas limit of the current HEAD block.
 func (bc *BlockChain) GasLimit() uint64 {
-	return bc.CurrentBlock().GasLimit
+	return bc.CurrentBlock().GasLimit()
 }
 
 // Genesis retrieves the chain's genesis block.
@@ -374,11 +374,6 @@ func (bc *BlockChain) SetTxLookupLimit(limit uint64) {
 // stale transaction indices.
 func (bc *BlockChain) TxLookupLimit() uint64 {
 	return bc.txLookupLimit
-}
-
-// TrieDB retrieves the low level trie database used for data storage.
-func (bc *BlockChain) TrieDB() *trie.Database {
-	return bc.triedb
 }
 
 // SubscribeRemovedLogsEvent registers a subscription of RemovedLogsEvent.

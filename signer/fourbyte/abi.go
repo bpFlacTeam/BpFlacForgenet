@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
-	"wodchain/accounts/abi"
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/accounts/abi"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 // decodedCallData is an internal type to represent a method call parsed according

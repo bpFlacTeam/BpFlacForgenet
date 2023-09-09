@@ -24,13 +24,13 @@ import (
 	"net"
 	"sync"
 
-	"wodchain/event"
-	"wodchain/log"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/simulations/pipes"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/simulations/pipes"
+	"github.com/wodTeam/Wod_Chain/rpc"
 	"github.com/gorilla/websocket"
 )
 
@@ -147,7 +147,7 @@ func (s *SimAdapter) DialRPC(id enode.ID) (*rpc.Client, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown node: %s", id)
 	}
-	return node.node.Attach(), nil
+	return node.node.Attach()
 }
 
 // GetNode returns the node with the given ID if it exists
@@ -206,7 +206,7 @@ func (sn *SimNode) ServeRPC(conn *websocket.Conn) error {
 	if err != nil {
 		return err
 	}
-	codec := rpc.NewFuncCodec(conn, func(v any, _ bool) error { return conn.WriteJSON(v) }, conn.ReadJSON)
+	codec := rpc.NewFuncCodec(conn, conn.WriteJSON, conn.ReadJSON)
 	handler.ServeCodec(codec, 0)
 	return nil
 }
@@ -274,7 +274,10 @@ func (sn *SimNode) Start(snapshots map[string][]byte) error {
 	}
 
 	// create an in-process RPC client
-	client := sn.node.Attach()
+	client, err := sn.node.Attach()
+	if err != nil {
+		return err
+	}
 	sn.lock.Lock()
 	sn.client = client
 	sn.lock.Unlock()

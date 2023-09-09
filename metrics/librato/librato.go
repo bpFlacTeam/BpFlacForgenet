@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"time"
 
-	"wodchain/metrics"
+	"github.com/wodTeam/Wod_Chain/metrics"
 )
 
 // a regexp for extracting the unit from time.Duration.String
@@ -100,17 +100,6 @@ func (rep *Reporter) BuildRequest(now time.Time, r metrics.Registry) (snapshot B
 			if m.Count() > 0 {
 				measurement[Name] = fmt.Sprintf("%s.%s", name, "count")
 				measurement[Value] = float64(m.Count())
-				measurement[Attributes] = map[string]interface{}{
-					DisplayUnitsLong:  Operations,
-					DisplayUnitsShort: OperationsShort,
-					DisplayMin:        "0",
-				}
-				snapshot.Counters = append(snapshot.Counters, measurement)
-			}
-		case metrics.CounterFloat64:
-			if m.Count() > 0 {
-				measurement[Name] = fmt.Sprintf("%s.%s", name, "count")
-				measurement[Value] = m.Count()
 				measurement[Attributes] = map[string]interface{}{
 					DisplayUnitsLong:  Operations,
 					DisplayUnitsShort: OperationsShort,

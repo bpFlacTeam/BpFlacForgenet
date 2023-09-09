@@ -23,13 +23,13 @@ import (
 	"io"
 	"math/big"
 
-	"wodchain/accounts"
-	"wodchain/accounts/external"
-	"wodchain/accounts/keystore"
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/accounts/external"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // ErrNoChainID is returned whenever the user failed to specify a chain id.

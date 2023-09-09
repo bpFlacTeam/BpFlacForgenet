@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/log"
-	"wodchain/metrics"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/metrics"
 )
 
 const (

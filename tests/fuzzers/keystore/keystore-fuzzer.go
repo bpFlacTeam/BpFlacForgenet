@@ -19,7 +19,7 @@ package keystore
 import (
 	"os"
 
-	"wodchain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
 )
 
 func Fuzz(input []byte) int {

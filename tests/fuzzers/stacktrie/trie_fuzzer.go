@@ -23,16 +23,11 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"sort"
 
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/ethdb"
-	"wodchain/trie"
-	"wodchain/trie/trienode"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/trie"
 	"golang.org/x/crypto/sha3"
-	"golang.org/x/exp/slices"
 )
 
 type fuzzer struct {
@@ -104,16 +99,26 @@ func (b *spongeBatch) Replay(w ethdb.KeyValueWriter) error { return nil }
 type kv struct {
 	k, v []byte
 }
+type kvs []kv
 
-// Fuzz is the fuzzing entry-point.
+func (k kvs) Len() int {
+	return len(k)
+}
+
+func (k kvs) Less(i, j int) bool {
+	return bytes.Compare(k[i].k, k[j].k) < 0
+}
+
+func (k kvs) Swap(i, j int) {
+	k[j], k[i] = k[i], k[j]
+}
+
 // The function must return
-//
-//   - 1 if the fuzzer should increase priority of the
-//     given input during subsequent fuzzing (for example, the input is lexically
-//     correct and was parsed successfully);
-//   - -1 if the input must not be added to corpus even if gives new coverage; and
-//   - 0 otherwise
-//
+// 1 if the fuzzer should increase priority of the
+//    given input during subsequent fuzzing (for example, the input is lexically
+//    correct and was parsed successfully);
+// -1 if the input must not be added to corpus even if gives new coverage; and
+// 0  otherwise
 // other values are reserved for future use.
 func Fuzz(data []byte) int {
 	f := fuzzer{
@@ -135,15 +140,12 @@ func Debug(data []byte) int {
 func (f *fuzzer) fuzz() int {
 	// This spongeDb is used to check the sequence of disk-db-writes
 	var (
-		spongeA = &spongeDb{sponge: sha3.NewLegacyKeccak256()}
-		dbA     = trie.NewDatabase(rawdb.NewDatabase(spongeA))
-		trieA   = trie.NewEmpty(dbA)
-		spongeB = &spongeDb{sponge: sha3.NewLegacyKeccak256()}
-		dbB     = trie.NewDatabase(rawdb.NewDatabase(spongeB))
-		trieB   = trie.NewStackTrie(func(owner common.Hash, path []byte, hash common.Hash, blob []byte) {
-			rawdb.WriteTrieNode(spongeB, owner, path, hash, blob, dbB.Scheme())
-		})
-		vals        []kv
+		spongeA     = &spongeDb{sponge: sha3.NewLegacyKeccak256()}
+		dbA         = trie.NewDatabase(spongeA)
+		trieA       = trie.NewEmpty(dbA)
+		spongeB     = &spongeDb{sponge: sha3.NewLegacyKeccak256()}
+		trieB       = trie.NewStackTrie(spongeB)
+		vals        kvs
 		useful      bool
 		maxElements = 10000
 		// operate on unique keys only
@@ -164,7 +166,7 @@ func (f *fuzzer) fuzz() int {
 		}
 		keys[string(k)] = struct{}{}
 		vals = append(vals, kv{k: k, v: v})
-		trieA.MustUpdate(k, v)
+		trieA.Update(k, v)
 		useful = true
 	}
 	if !useful {
@@ -176,23 +178,23 @@ func (f *fuzzer) fuzz() int {
 		panic(err)
 	}
 	if nodes != nil {
-		dbA.Update(rootA, types.EmptyRootHash, 0, trienode.NewWithNodeSet(nodes), nil)
+		dbA.Update(trie.NewWithNodeSet(nodes))
 	}
 	// Flush memdb -> disk (sponge)
-	dbA.Commit(rootA, false)
+	dbA.Commit(rootA, false, nil)
 
 	// Stacktrie requires sorted insertion
-	slices.SortFunc(vals, func(a, b kv) int {
-		return bytes.Compare(a.k, b.k)
-	})
+	sort.Sort(vals)
 	for _, kv := range vals {
 		if f.debugging {
 			fmt.Printf("{\"%#x\" , \"%#x\"} // stacktrie.Update\n", kv.k, kv.v)
 		}
-		trieB.MustUpdate(kv.k, kv.v)
+		trieB.Update(kv.k, kv.v)
 	}
 	rootB := trieB.Hash()
-	trieB.Commit()
+	if _, err := trieB.Commit(); err != nil {
+		panic(err)
+	}
 	if rootA != rootB {
 		panic(fmt.Sprintf("roots differ: (trie) %x != %x (stacktrie)", rootA, rootB))
 	}
@@ -200,49 +202,6 @@ func (f *fuzzer) fuzz() int {
 	sumB := spongeB.sponge.Sum(nil)
 	if !bytes.Equal(sumA, sumB) {
 		panic(fmt.Sprintf("sequence differ: (trie) %x != %x (stacktrie)", sumA, sumB))
-	}
-
-	// Ensure all the nodes are persisted correctly
-	var (
-		nodeset = make(map[string][]byte) // path -> blob
-		trieC   = trie.NewStackTrie(func(owner common.Hash, path []byte, hash common.Hash, blob []byte) {
-			if crypto.Keccak256Hash(blob) != hash {
-				panic("invalid node blob")
-			}
-			if owner != (common.Hash{}) {
-				panic("invalid node owner")
-			}
-			nodeset[string(path)] = common.CopyBytes(blob)
-		})
-		checked int
-	)
-	for _, kv := range vals {
-		trieC.MustUpdate(kv.k, kv.v)
-	}
-	rootC, _ := trieC.Commit()
-	if rootA != rootC {
-		panic(fmt.Sprintf("roots differ: (trie) %x != %x (stacktrie)", rootA, rootC))
-	}
-	trieA, _ = trie.New(trie.TrieID(rootA), dbA)
-	iterA := trieA.MustNodeIterator(nil)
-	for iterA.Next(true) {
-		if iterA.Hash() == (common.Hash{}) {
-			if _, present := nodeset[string(iterA.Path())]; present {
-				panic("unexpected tiny node")
-			}
-			continue
-		}
-		nodeBlob, present := nodeset[string(iterA.Path())]
-		if !present {
-			panic("missing node")
-		}
-		if !bytes.Equal(nodeBlob, iterA.NodeBlob()) {
-			panic("node blob is not matched")
-		}
-		checked += 1
-	}
-	if checked != len(nodeset) {
-		panic("node number is not matched")
 	}
 	return 1
 }

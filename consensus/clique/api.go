@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/consensus"
-	"wodchain/core/types"
-	"wodchain/rlp"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/consensus"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 // API is a user facing RPC API to allow controlling the signer and voting
@@ -205,7 +205,7 @@ func (sb *blockNumberOrHashOrRLP) UnmarshalJSON(data []byte) error {
 }
 
 // GetSigner returns the signer for a specific clique block.
-// Can be called with a block number, a block hash or a rlp encoded blob.
+// Can be called with either a blocknumber, blockhash or an rlp encoded blob.
 // The RLP encoded blob can either be a block or a header.
 func (api *API) GetSigner(rlpOrBlockNr *blockNumberOrHashOrRLP) (common.Address, error) {
 	if len(rlpOrBlockNr.RLP) == 0 {

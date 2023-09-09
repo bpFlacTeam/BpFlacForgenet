@@ -24,14 +24,14 @@ import (
 	"math/big"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/ethdb/memorydb"
-	"wodchain/les/vflux"
-	vfs "wodchain/les/vflux/server"
-	"wodchain/log"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/enr"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/ethdb/memorydb"
+	"github.com/wodTeam/Wod_Chain/les/vflux"
+	vfs "github.com/wodTeam/Wod_Chain/les/vflux/server"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 var (

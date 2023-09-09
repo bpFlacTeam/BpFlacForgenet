@@ -35,7 +35,7 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/log"
 	"github.com/hashicorp/go-bexpr"
 )
 

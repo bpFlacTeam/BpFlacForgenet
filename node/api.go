@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"strings"
 
-	"wodchain/common/hexutil"
-	"wodchain/crypto"
-	"wodchain/internal/debug"
-	"wodchain/log"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/internal/debug"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 // apis returns the collection of built-in RPC APIs.
@@ -176,10 +176,6 @@ func (api *adminAPI) StartHTTP(host *string, port *int, cors *string, apis *stri
 		CorsAllowedOrigins: api.node.config.HTTPCors,
 		Vhosts:             api.node.config.HTTPVirtualHosts,
 		Modules:            api.node.config.HTTPModules,
-		rpcEndpointConfig: rpcEndpointConfig{
-			batchItemLimit:         api.node.config.BatchRequestLimit,
-			batchResponseSizeLimit: api.node.config.BatchResponseMaxSize,
-		},
 	}
 	if cors != nil {
 		config.CorsAllowedOrigins = nil
@@ -254,10 +250,6 @@ func (api *adminAPI) StartWS(host *string, port *int, allowedOrigins *string, ap
 		Modules: api.node.config.WSModules,
 		Origins: api.node.config.WSOrigins,
 		// ExposeAll: api.node.config.WSExposeAll,
-		rpcEndpointConfig: rpcEndpointConfig{
-			batchItemLimit:         api.node.config.BatchRequestLimit,
-			batchResponseSizeLimit: api.node.config.BatchResponseMaxSize,
-		},
 	}
 	if apis != nil {
 		config.Modules = nil
@@ -277,7 +269,7 @@ func (api *adminAPI) StartWS(host *string, port *int, allowedOrigins *string, ap
 	if err := server.setListenAddr(*host, *port); err != nil {
 		return false, err
 	}
-	openApis, _ := api.node.getAPIs()
+	openApis, _ := api.node.GetAPIs()
 	if err := server.enableWS(openApis, config); err != nil {
 		return false, err
 	}

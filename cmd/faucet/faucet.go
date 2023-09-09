@@ -39,26 +39,24 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/accounts"
-	"wodchain/accounts/keystore"
-	"wodchain/cmd/utils"
-	"wodchain/common"
-	"wodchain/core"
-	"wodchain/core/types"
-	"wodchain/eth/downloader"
-	"wodchain/eth/ethconfig"
-	"wodchain/ethclient"
-	"wodchain/ethstats"
-	"wodchain/internal/version"
-	"wodchain/les"
-	"wodchain/log"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/nat"
-	"wodchain/params"
-
 	"github.com/gorilla/websocket"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/cmd/utils"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/eth/downloader"
+	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
+	"github.com/wodTeam/Wod_Chain/ethclient"
+	"github.com/wodTeam/Wod_Chain/ethstats"
+	"github.com/wodTeam/Wod_Chain/les"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/nat"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 var (
@@ -87,11 +85,17 @@ var (
 	twitterTokenV1Flag = flag.String("twitter.token.v1", "", "Bearer token to authenticate with the v1.1 Twitter API")
 
 	goerliFlag  = flag.Bool("goerli", false, "Initializes the faucet with Gorli network config")
+	rinkebyFlag = flag.Bool("rinkeby", false, "Initializes the faucet with Rinkeby network config")
 	sepoliaFlag = flag.Bool("sepolia", false, "Initializes the faucet with Sepolia network config")
 )
 
 var (
 	ether = new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+)
+
+var (
+	gitCommit = "" // Git SHA1 commit hash of the release (set via linker flags)
+	gitDate   = "" // Git commit date YYYYMMDD of the release (set via linker flags)
 )
 
 //go:embed faucet.html
@@ -140,7 +144,7 @@ func main() {
 		log.Crit("Failed to render the faucet template", "err", err)
 	}
 	// Load and parse the genesis block requested by the user
-	genesis, err := getGenesis(*genesisFlag, *goerliFlag, *sepoliaFlag)
+	genesis, err := getGenesis(*genesisFlag, *goerliFlag, *rinkebyFlag, *sepoliaFlag)
 	if err != nil {
 		log.Crit("Failed to parse genesis config", "err", err)
 	}
@@ -222,10 +226,9 @@ type wsConn struct {
 
 func newFaucet(genesis *core.Genesis, port int, enodes []*enode.Node, network uint64, stats string, ks *keystore.KeyStore, index []byte) (*faucet, error) {
 	// Assemble the raw devp2p protocol stack
-	git, _ := version.VCS()
 	stack, err := node.New(&node.Config{
 		Name:    "geth",
-		Version: params.VersionWithCommit(git.Commit, git.Date),
+		Version: params.VersionWithCommit(gitCommit, gitDate),
 		DataDir: filepath.Join(os.Getenv("HOME"), ".faucet"),
 		P2P: p2p.Config{
 			NAT:              nat.Any(),
@@ -269,7 +272,11 @@ func newFaucet(genesis *core.Genesis, port int, enodes []*enode.Node, network ui
 		}
 	}
 	// Attach to the client and retrieve and interesting metadatas
-	api := stack.Attach()
+	api, err := stack.Attach()
+	if err != nil {
+		stack.Close()
+		return nil, err
+	}
 	client := ethclient.NewClient(api)
 
 	return &faucet{
@@ -459,7 +466,7 @@ func (f *faucet) apiHandler(w http.ResponseWriter, r *http.Request) {
 			id = username
 		default:
 			//lint:ignore ST1005 This error is to be displayed in the browser
-			err = errors.New("Something funky happened, please open an issue at https://wodchain/issues")
+			err = errors.New("Something funky happened, please open an issue at https://github.com/wodTeam/Wod_Chain/issues")
 		}
 		if err != nil {
 			if err = sendError(wsconn, err); err != nil {
@@ -743,7 +750,7 @@ func authTwitter(url string, tokenV1, tokenV2 string) (string, string, string, c
 func authTwitterWithTokenV1(tweetID string, token string) (string, string, string, common.Address, error) {
 	// Query the tweet details from Twitter
 	url := fmt.Sprintf("https://api.twitter.com/1.1/statuses/show.json?id=%s", tweetID)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", "", "", common.Address{}, err
 	}
@@ -780,7 +787,7 @@ func authTwitterWithTokenV1(tweetID string, token string) (string, string, strin
 func authTwitterWithTokenV2(tweetID string, token string) (string, string, string, common.Address, error) {
 	// Query the tweet details from Twitter
 	url := fmt.Sprintf("https://api.twitter.com/2/tweets/%s?expansions=author_id&user.fields=profile_image_url", tweetID)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", "", "", common.Address{}, err
 	}
@@ -876,7 +883,7 @@ func authNoAuth(url string) (string, string, common.Address, error) {
 }
 
 // getGenesis returns a genesis based on input args
-func getGenesis(genesisFlag string, goerliFlag bool, sepoliaFlag bool) (*core.Genesis, error) {
+func getGenesis(genesisFlag string, goerliFlag bool, rinkebyFlag bool, sepoliaFlag bool) (*core.Genesis, error) {
 	switch {
 	case genesisFlag != "":
 		var genesis core.Genesis
@@ -884,9 +891,11 @@ func getGenesis(genesisFlag string, goerliFlag bool, sepoliaFlag bool) (*core.Ge
 		return &genesis, err
 	case goerliFlag:
 		return core.DefaultGoerliGenesisBlock(), nil
+	case rinkebyFlag:
+		return core.DefaultRinkebyGenesisBlock(), nil
 	case sepoliaFlag:
 		return core.DefaultSepoliaGenesisBlock(), nil
 	default:
-		return nil, errors.New("no genesis flag provided")
+		return nil, fmt.Errorf("no genesis flag provided")
 	}
 }

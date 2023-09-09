@@ -27,7 +27,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-const pathOfPackageRLP = "wodchain/rlp"
+const pathOfPackageRLP = "github.com/wodTeam/Wod_Chain/rlp"
 
 func main() {
 	var (

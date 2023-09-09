@@ -17,15 +17,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net"
 
-	"wodchain/cmd/devp2p/internal/ethtest"
-	"wodchain/crypto"
-	"wodchain/p2p"
-	"wodchain/p2p/rlpx"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/cmd/devp2p/internal/ethtest"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/rlpx"
+	"github.com/wodTeam/Wod_Chain/rlp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -92,7 +91,7 @@ func rlpxPing(ctx *cli.Context) error {
 	case 1:
 		var msg []p2p.DiscReason
 		if rlp.DecodeBytes(data, &msg); len(msg) == 0 {
-			return errors.New("invalid disconnect message")
+			return fmt.Errorf("invalid disconnect message")
 		}
 		return fmt.Errorf("received disconnect message: %v", msg[0])
 	default:

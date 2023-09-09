@@ -23,8 +23,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"wodchain/common"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/crypto"
 )
 
 // MakeTopics converts a filter query argument list into a filter topic set.

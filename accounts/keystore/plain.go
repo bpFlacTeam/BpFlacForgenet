@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 type keyStorePlain struct {

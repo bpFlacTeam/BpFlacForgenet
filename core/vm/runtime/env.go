@@ -17,15 +17,14 @@
 package runtime
 
 import (
-	"wodchain/core"
-	"wodchain/core/vm"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/vm"
 )
 
 func NewEnv(cfg *Config) *vm.EVM {
 	txContext := vm.TxContext{
-		Origin:     cfg.Origin,
-		GasPrice:   cfg.GasPrice,
-		BlobHashes: cfg.BlobHashes,
+		Origin:   cfg.Origin,
+		GasPrice: cfg.GasPrice,
 	}
 	blockContext := vm.BlockContext{
 		CanTransfer: core.CanTransfer,

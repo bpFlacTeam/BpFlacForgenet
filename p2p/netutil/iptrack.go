@@ -19,7 +19,7 @@ package netutil
 import (
 	"time"
 
-	"wodchain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
 )
 
 // IPTracker predicts the external endpoint, i.e. IP address and port, of the local host
@@ -78,7 +78,7 @@ func (it *IPTracker) PredictEndpoint() string {
 	it.gcStatements(it.clock.Now())
 
 	// The current strategy is simple: find the endpoint with most statements.
-	counts := make(map[string]int, len(it.statements))
+	counts := make(map[string]int)
 	maxcount, max := 0, ""
 	for _, s := range it.statements {
 		c := counts[s.endpoint] + 1

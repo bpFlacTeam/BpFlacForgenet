@@ -26,8 +26,8 @@ import (
 	"net"
 	"strings"
 
-	"wodchain/p2p/enr"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 var errMissingPrefix = errors.New("missing 'enr:' prefix for base64-encoded record")
@@ -199,7 +199,7 @@ func (n ID) String() string {
 	return fmt.Sprintf("%x", n[:])
 }
 
-// GoString returns the Go syntax representation of a ID is a call to HexID.
+// The Go syntax representation of a ID is a call to HexID.
 func (n ID) GoString() string {
 	return fmt.Sprintf("enode.HexID(\"%x\")", n[:])
 }

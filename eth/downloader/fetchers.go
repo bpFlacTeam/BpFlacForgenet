@@ -19,9 +19,9 @@ package downloader
 import (
 	"time"
 
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/eth/protocols/eth"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/eth"
 )
 
 // fetchHeadersByHash is a blocking version of Peer.RequestHeadersByHash which

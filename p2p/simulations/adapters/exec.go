@@ -35,11 +35,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/reexec"
-	"wodchain/log"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rpc"
 	"github.com/gorilla/websocket"
 )
 
@@ -428,11 +428,9 @@ func execP2PNode() {
 
 	// Send status to the host.
 	statusJSON, _ := json.Marshal(status)
-	resp, err := http.Post(statusURL, "application/json", bytes.NewReader(statusJSON))
-	if err != nil {
+	if _, err := http.Post(statusURL, "application/json", bytes.NewReader(statusJSON)); err != nil {
 		log.Crit("Can't post startup info", "url", statusURL, "err", err)
 	}
-	resp.Body.Close()
 	if stackErr != nil {
 		os.Exit(1)
 	}

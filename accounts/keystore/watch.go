@@ -22,27 +22,25 @@ package keystore
 import (
 	"time"
 
-	"wodchain/log"
-	"github.com/fsnotify/fsnotify"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/rjeczalik/notify"
 )
 
 type watcher struct {
 	ac       *accountCache
-	running  bool // set to true when runloop begins
-	runEnded bool // set to true when runloop ends
-	starting bool // set to true prior to runloop starting
+	starting bool
+	running  bool
+	ev       chan notify.EventInfo
 	quit     chan struct{}
 }
 
 func newWatcher(ac *accountCache) *watcher {
 	return &watcher{
 		ac:   ac,
+		ev:   make(chan notify.EventInfo, 10),
 		quit: make(chan struct{}),
 	}
 }
-
-// enabled returns false on systems not supported.
-func (*watcher) enabled() bool { return true }
 
 // starts the watcher loop in the background.
 // Start a watcher in the background if that's not already in progress.
@@ -64,24 +62,16 @@ func (w *watcher) loop() {
 		w.ac.mu.Lock()
 		w.running = false
 		w.starting = false
-		w.runEnded = true
 		w.ac.mu.Unlock()
 	}()
 	logger := log.New("path", w.ac.keydir)
 
-	// Create new watcher.
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Error("Failed to start filesystem watcher", "err", err)
+	if err := notify.Watch(w.ac.keydir, w.ev, notify.All); err != nil {
+		logger.Trace("Failed to watch keystore folder", "err", err)
 		return
 	}
-	defer watcher.Close()
-	if err := watcher.Add(w.ac.keydir); err != nil {
-		logger.Warn("Failed to watch keystore folder", "err", err)
-		return
-	}
-
-	logger.Trace("Started watching keystore folder", "folder", w.ac.keydir)
+	defer notify.Stop(w.ev)
+	logger.Trace("Started watching keystore folder")
 	defer logger.Trace("Stopped watching keystore folder")
 
 	w.ac.mu.Lock()
@@ -105,24 +95,12 @@ func (w *watcher) loop() {
 		select {
 		case <-w.quit:
 			return
-		case _, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
+		case <-w.ev:
 			// Trigger the scan (with delay), if not already triggered
 			if !rescanTriggered {
 				debounce.Reset(debounceDuration)
 				rescanTriggered = true
 			}
-			// The fsnotify library does provide more granular event-info, it
-			// would be possible to refresh individual affected files instead
-			// of scheduling a full rescan. For most cases though, the
-			// full rescan is quick and obviously simplest.
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return
-			}
-			log.Info("Filsystem watcher error", "err", err)
 		case <-debounce.C:
 			w.ac.scanAccounts()
 			rescanTriggered = false

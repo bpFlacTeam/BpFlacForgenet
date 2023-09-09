@@ -19,9 +19,9 @@ package main
 import (
 	"os"
 
-	"wodchain/cmd/devp2p/internal/v4test"
-	"wodchain/internal/utesting"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/cmd/devp2p/internal/v4test"
+	"github.com/wodTeam/Wod_Chain/internal/utesting"
+	"github.com/wodTeam/Wod_Chain/log"
 	"github.com/urfave/cli/v2"
 )
 

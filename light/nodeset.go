@@ -20,10 +20,10 @@ import (
 	"errors"
 	"sync"
 
-	"wodchain/common"
-	"wodchain/crypto"
-	"wodchain/ethdb"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // NodeSet stores a set of trie nodes. It implements trie.Database and can also

@@ -20,17 +20,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/consensus"
-	"wodchain/consensus/misc"
-	"wodchain/consensus/misc/eip1559"
-	"wodchain/core/rawdb"
-	"wodchain/core/state"
-	"wodchain/core/types"
-	"wodchain/core/vm"
-	"wodchain/ethdb"
-	"wodchain/params"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/consensus"
+	"github.com/wodTeam/Wod_Chain/consensus/misc"
+	"github.com/wodTeam/Wod_Chain/core/state"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/core/vm"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 // BlockGen creates blocks for testing.
@@ -42,11 +39,10 @@ type BlockGen struct {
 	header  *types.Header
 	statedb *state.StateDB
 
-	gasPool     *GasPool
-	txs         []*types.Transaction
-	receipts    []*types.Receipt
-	uncles      []*types.Header
-	withdrawals []*types.Withdrawal
+	gasPool  *GasPool
+	txs      []*types.Transaction
+	receipts []*types.Receipt
+	uncles   []*types.Header
 
 	config *params.ChainConfig
 	engine consensus.Engine
@@ -82,31 +78,6 @@ func (b *BlockGen) SetDifficulty(diff *big.Int) {
 	b.header.Difficulty = diff
 }
 
-// SetPos makes the header a PoS-header (0 difficulty)
-func (b *BlockGen) SetPoS() {
-	b.header.Difficulty = new(big.Int)
-}
-
-// addTx adds a transaction to the generated block. If no coinbase has
-// been set, the block's coinbase is set to the zero address.
-//
-// There are a few options can be passed as well in order to run some
-// customized rules.
-// - bc:       enables the ability to query historical block hashes for BLOCKHASH
-// - vmConfig: extends the flexibility for customizing evm rules, e.g. enable extra EIPs
-func (b *BlockGen) addTx(bc *BlockChain, vmConfig vm.Config, tx *types.Transaction) {
-	if b.gasPool == nil {
-		b.SetCoinbase(common.Address{})
-	}
-	b.statedb.SetTxContext(tx.Hash(), len(b.txs))
-	receipt, err := ApplyTransaction(b.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vmConfig)
-	if err != nil {
-		panic(err)
-	}
-	b.txs = append(b.txs, tx)
-	b.receipts = append(b.receipts, receipt)
-}
-
 // AddTx adds a transaction to the generated block. If no coinbase has
 // been set, the block's coinbase is set to the zero address.
 //
@@ -116,7 +87,7 @@ func (b *BlockGen) addTx(bc *BlockChain, vmConfig vm.Config, tx *types.Transacti
 // added. Notably, contract code relying on the BLOCKHASH instruction
 // will panic during execution.
 func (b *BlockGen) AddTx(tx *types.Transaction) {
-	b.addTx(nil, vm.Config{}, tx)
+	b.AddTxWithChain(nil, tx)
 }
 
 // AddTxWithChain adds a transaction to the generated block. If no coinbase has
@@ -128,14 +99,16 @@ func (b *BlockGen) AddTx(tx *types.Transaction) {
 // added. If contract code relies on the BLOCKHASH instruction,
 // the block in chain will be returned.
 func (b *BlockGen) AddTxWithChain(bc *BlockChain, tx *types.Transaction) {
-	b.addTx(bc, vm.Config{}, tx)
-}
-
-// AddTxWithVMConfig adds a transaction to the generated block. If no coinbase has
-// been set, the block's coinbase is set to the zero address.
-// The evm interpreter can be customized with the provided vm config.
-func (b *BlockGen) AddTxWithVMConfig(tx *types.Transaction, config vm.Config) {
-	b.addTx(nil, config, tx)
+	if b.gasPool == nil {
+		b.SetCoinbase(common.Address{})
+	}
+	b.statedb.Prepare(tx.Hash(), len(b.txs))
+	receipt, err := ApplyTransaction(b.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	b.txs = append(b.txs, tx)
+	b.receipts = append(b.receipts, receipt)
 }
 
 // GetBalance returns the balance of the given address at the generated block.
@@ -155,11 +128,6 @@ func (b *BlockGen) AddUncheckedTx(tx *types.Transaction) {
 // Number returns the block number of the block being generated.
 func (b *BlockGen) Number() *big.Int {
 	return new(big.Int).Set(b.header.Number)
-}
-
-// Timestamp returns the timestamp of the block being generated.
-func (b *BlockGen) Timestamp() uint64 {
-	return b.header.Time
 }
 
 // BaseFee returns the EIP-1559 base fee of the block being generated.
@@ -203,41 +171,13 @@ func (b *BlockGen) AddUncle(h *types.Header) {
 	// The gas limit and price should be derived from the parent
 	h.GasLimit = parent.GasLimit
 	if b.config.IsLondon(h.Number) {
-		h.BaseFee = eip1559.CalcBaseFee(b.config, parent)
+		h.BaseFee = misc.CalcBaseFee(b.config, parent)
 		if !b.config.IsLondon(parent.Number) {
-			parentGasLimit := parent.GasLimit * b.config.ElasticityMultiplier()
+			parentGasLimit := parent.GasLimit * params.ElasticityMultiplier
 			h.GasLimit = CalcGasLimit(parentGasLimit, parentGasLimit)
 		}
 	}
 	b.uncles = append(b.uncles, h)
-}
-
-// AddWithdrawal adds a withdrawal to the generated block.
-// It returns the withdrawal index.
-func (b *BlockGen) AddWithdrawal(w *types.Withdrawal) uint64 {
-	cpy := *w
-	cpy.Index = b.nextWithdrawalIndex()
-	b.withdrawals = append(b.withdrawals, &cpy)
-	return cpy.Index
-}
-
-// nextWithdrawalIndex computes the index of the next withdrawal.
-func (b *BlockGen) nextWithdrawalIndex() uint64 {
-	if len(b.withdrawals) != 0 {
-		return b.withdrawals[len(b.withdrawals)-1].Index + 1
-	}
-	for i := b.i - 1; i >= 0; i-- {
-		if wd := b.chain[i].Withdrawals(); len(wd) != 0 {
-			return wd[len(wd)-1].Index + 1
-		}
-		if i == 0 {
-			// Correctly set the index if no parent had withdrawals.
-			if wd := b.parent.Withdrawals(); len(wd) != 0 {
-				return wd[len(wd)-1].Index + 1
-			}
-		}
-	}
-	return 0
 }
 
 // PrevBlock returns a previously generated block by number. It panics if
@@ -316,17 +256,15 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			gen(i, b)
 		}
 		if b.engine != nil {
-			block, err := b.engine.FinalizeAndAssemble(chainreader, b.header, statedb, b.txs, b.uncles, b.receipts, b.withdrawals)
-			if err != nil {
-				panic(err)
-			}
+			// Finalize and seal the block
+			block, _ := b.engine.FinalizeAndAssemble(chainreader, b.header, statedb, b.txs, b.uncles, b.receipts)
 
 			// Write state changes to db
-			root, err := statedb.Commit(b.header.Number.Uint64(), config.IsEIP158(b.header.Number))
+			root, err := statedb.Commit(config.IsEIP158(b.header.Number))
 			if err != nil {
 				panic(fmt.Sprintf("state write error: %v", err))
 			}
-			if err := statedb.Database().TrieDB().Commit(root, false); err != nil {
+			if err := statedb.Database().TrieDB().Commit(root, false, nil); err != nil {
 				panic(fmt.Sprintf("trie write error: %v", err))
 			}
 			return block, b.receipts
@@ -344,19 +282,6 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 		parent = block
 	}
 	return blocks, receipts
-}
-
-// GenerateChainWithGenesis is a wrapper of GenerateChain which will initialize
-// genesis block to database first according to the provided genesis specification
-// then generate chain on top.
-func GenerateChainWithGenesis(genesis *Genesis, engine consensus.Engine, n int, gen func(int, *BlockGen)) (ethdb.Database, []*types.Block, []types.Receipts) {
-	db := rawdb.NewMemoryDatabase()
-	_, err := genesis.Commit(db, trie.NewDatabase(db))
-	if err != nil {
-		panic(err)
-	}
-	blocks, receipts := GenerateChain(genesis.Config, genesis.ToBlock(), engine, db, n, gen)
-	return db, blocks, receipts
 }
 
 func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.StateDB, engine consensus.Engine) *types.Header {
@@ -381,9 +306,9 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 		Time:     time,
 	}
 	if chain.Config().IsLondon(header.Number) {
-		header.BaseFee = eip1559.CalcBaseFee(chain.Config(), parent.Header())
+		header.BaseFee = misc.CalcBaseFee(chain.Config(), parent.Header())
 		if !chain.Config().IsLondon(parent.Number()) {
-			parentGasLimit := parent.GasLimit() * chain.Config().ElasticityMultiplier()
+			parentGasLimit := parent.GasLimit() * params.ElasticityMultiplier
 			header.GasLimit = CalcGasLimit(parentGasLimit, parentGasLimit)
 		}
 	}
@@ -391,8 +316,8 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 }
 
 // makeHeaderChain creates a deterministic chain of headers rooted at parent.
-func makeHeaderChain(chainConfig *params.ChainConfig, parent *types.Header, n int, engine consensus.Engine, db ethdb.Database, seed int) []*types.Header {
-	blocks := makeBlockChain(chainConfig, types.NewBlockWithHeader(parent), n, engine, db, seed)
+func makeHeaderChain(parent *types.Header, n int, engine consensus.Engine, db ethdb.Database, seed int) []*types.Header {
+	blocks := makeBlockChain(types.NewBlockWithHeader(parent), n, engine, db, seed)
 	headers := make([]*types.Header, len(blocks))
 	for i, block := range blocks {
 		headers[i] = block.Header()
@@ -400,30 +325,12 @@ func makeHeaderChain(chainConfig *params.ChainConfig, parent *types.Header, n in
 	return headers
 }
 
-// makeHeaderChainWithGenesis creates a deterministic chain of headers from genesis.
-func makeHeaderChainWithGenesis(genesis *Genesis, n int, engine consensus.Engine, seed int) (ethdb.Database, []*types.Header) {
-	db, blocks := makeBlockChainWithGenesis(genesis, n, engine, seed)
-	headers := make([]*types.Header, len(blocks))
-	for i, block := range blocks {
-		headers[i] = block.Header()
-	}
-	return db, headers
-}
-
 // makeBlockChain creates a deterministic chain of blocks rooted at parent.
-func makeBlockChain(chainConfig *params.ChainConfig, parent *types.Block, n int, engine consensus.Engine, db ethdb.Database, seed int) []*types.Block {
-	blocks, _ := GenerateChain(chainConfig, parent, engine, db, n, func(i int, b *BlockGen) {
+func makeBlockChain(parent *types.Block, n int, engine consensus.Engine, db ethdb.Database, seed int) []*types.Block {
+	blocks, _ := GenerateChain(params.TestChainConfig, parent, engine, db, n, func(i int, b *BlockGen) {
 		b.SetCoinbase(common.Address{0: byte(seed), 19: byte(i)})
 	})
 	return blocks
-}
-
-// makeBlockChain creates a deterministic chain of blocks from genesis
-func makeBlockChainWithGenesis(genesis *Genesis, n int, engine consensus.Engine, seed int) (ethdb.Database, []*types.Block) {
-	db, blocks, _ := GenerateChainWithGenesis(genesis, engine, n, func(i int, b *BlockGen) {
-		b.SetCoinbase(common.Address{0: byte(seed), 19: byte(i)})
-	})
-	return db, blocks
 }
 
 type fakeChainReader struct {

@@ -26,23 +26,21 @@ import (
 	"os/signal"
 	"time"
 
-	"wodchain/accounts/keystore"
-	"wodchain/common"
-	"wodchain/common/fdlimit"
-	"wodchain/core"
-	"wodchain/core/txpool"
-	"wodchain/core/txpool/legacypool"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/eth"
-	"wodchain/eth/downloader"
-	"wodchain/eth/ethconfig"
-	"wodchain/log"
-	"wodchain/miner"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/fdlimit"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/eth"
+	"github.com/wodTeam/Wod_Chain/eth/downloader"
+	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/miner"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 func main() {
@@ -58,7 +56,7 @@ func main() {
 	for i := 0; i < len(sealers); i++ {
 		sealers[i], _ = crypto.GenerateKey()
 	}
-	// Create a Clique network based off of the Sepolia config
+	// Create a Clique network based off of the Rinkeby config
 	genesis := makeGenesis(faucets, sealers)
 
 	// Handle interrupts.
@@ -105,7 +103,7 @@ func main() {
 	// Iterate over all the nodes and start signing on them
 	time.Sleep(3 * time.Second)
 	for _, node := range nodes {
-		if err := node.StartMining(); err != nil {
+		if err := node.StartMining(1); err != nil {
 			panic(err)
 		}
 	}
@@ -133,7 +131,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		if err := backend.TxPool().Add([]*txpool.Transaction{{Tx: tx}}, true, false); err != nil {
+		if err := backend.TxPool().AddLocal(tx); err != nil {
 			panic(err)
 		}
 		nonces[index]++
@@ -148,12 +146,13 @@ func main() {
 // makeGenesis creates a custom Clique genesis block based on some pre-defined
 // signer and faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey, sealers []*ecdsa.PrivateKey) *core.Genesis {
-	// Create a Clique network based off of the Seplia config
-	genesis := core.DefaultSepoliaGenesisBlock()
+	// Create a Clique network based off of the Rinkeby config
+	genesis := core.DefaultRinkebyGenesisBlock()
 	genesis.GasLimit = 25000000
 
 	genesis.Config.ChainID = big.NewInt(18)
 	genesis.Config.Clique.Period = 1
+	genesis.Config.EIP150Hash = common.Hash{}
 
 	genesis.Alloc = core.GenesisAlloc{}
 	for _, faucet := range faucets {
@@ -207,7 +206,7 @@ func makeSealer(genesis *core.Genesis) (*node.Node, *eth.Ethereum, error) {
 		SyncMode:        downloader.FullSync,
 		DatabaseCache:   256,
 		DatabaseHandles: 256,
-		TxPool:          legacypool.DefaultConfig,
+		TxPool:          core.DefaultTxPoolConfig,
 		GPO:             ethconfig.Defaults.GPO,
 		Miner: miner.Config{
 			GasCeil:  genesis.GasLimit * 11 / 10,

@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"time"
 
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // CheckDanglingStorage iterates the snap storage data, and verifies that all
@@ -98,8 +98,8 @@ func CheckJournalAccount(db ethdb.KeyValueStore, hash common.Hash) error {
 	baseRoot := rawdb.ReadSnapshotRoot(db)
 	fmt.Printf("Disklayer: Root: %x\n", baseRoot)
 	if data := rawdb.ReadAccountSnapshot(db, hash); data != nil {
-		account, err := types.FullAccount(data)
-		if err != nil {
+		account := new(Account)
+		if err := rlp.DecodeBytes(data, account); err != nil {
 			panic(err)
 		}
 		fmt.Printf("\taccount.nonce: %d\n", account.Nonce)
@@ -129,8 +129,8 @@ func CheckJournalAccount(db ethdb.KeyValueStore, hash common.Hash) error {
 		}
 		fmt.Printf("Disklayer+%d: Root: %x, parent %x\n", depth, root, pRoot)
 		if data, ok := accounts[hash]; ok {
-			account, err := types.FullAccount(data)
-			if err != nil {
+			account := new(Account)
+			if err := rlp.DecodeBytes(data, account); err != nil {
 				panic(err)
 			}
 			fmt.Printf("\taccount.nonce: %d\n", account.Nonce)

@@ -20,7 +20,7 @@ package utils
 import (
 	"fmt"
 
-	"wodchain/console/prompt"
+	"github.com/wodTeam/Wod_Chain/console/prompt"
 )
 
 // GetPassPhrase displays the given text(prompt) to the user and requests some textual

@@ -17,9 +17,9 @@
 package snap
 
 import (
-	"wodchain/common"
-	"wodchain/log"
-	"wodchain/p2p"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p"
 )
 
 // Peer is a collection of relevant information we have about a `snap` peer.
@@ -86,7 +86,7 @@ func (p *Peer) RequestAccountRange(id uint64, root common.Hash, origin, limit co
 	})
 }
 
-// RequestStorageRanges fetches a batch of storage slots belonging to one or more
+// RequestStorageRange fetches a batch of storage slots belonging to one or more
 // accounts. If slots from only one account is requested, an origin marker may also
 // be used to retrieve from there.
 func (p *Peer) RequestStorageRanges(id uint64, root common.Hash, accounts []common.Hash, origin, limit []byte, bytes uint64) error {

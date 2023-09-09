@@ -21,12 +21,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/prque"
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/log"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/prque"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // InitDatabaseFromFreezer reinitializes an empty database from a previous batch
@@ -50,7 +50,7 @@ func InitDatabaseFromFreezer(db ethdb.Database) {
 		if i+count > frozen {
 			count = frozen - i
 		}
-		data, err := db.AncientRange(ChainFreezerHashTable, i, count, 32*count)
+		data, err := db.AncientRange(chainFreezerHashTable, i, count, 32*count)
 		if err != nil {
 			log.Crit("Failed to init database from freezer", "err", err)
 		}
@@ -132,12 +132,11 @@ func iterateTransactions(db ethdb.Database, from uint64, to uint64, reverse bool
 		}
 	}
 	// process runs in parallel
-	var nThreadsAlive atomic.Int32
-	nThreadsAlive.Store(int32(threads))
+	nThreadsAlive := int32(threads)
 	process := func() {
 		defer func() {
 			// Last processor closes the result channel
-			if nThreadsAlive.Add(-1) == 0 {
+			if atomic.AddInt32(&nThreadsAlive, -1) == 0 {
 				close(hashesCh)
 			}
 		}()
@@ -192,7 +191,7 @@ func indexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan
 		// in to be [to-1]. Therefore, setting lastNum to means that the
 		// prqueue gap-evaluation will work correctly
 		lastNum = to
-		queue   = prque.New[int64, *blockTxHashes](nil)
+		queue   = prque.New(nil)
 		// for stats reporting
 		blocks, txs = 0, 0
 	)
@@ -211,7 +210,7 @@ func indexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan
 				break
 			}
 			// Next block available, pop it off and index it
-			delivery := queue.PopItem()
+			delivery := queue.PopItem().(*blockTxHashes)
 			lastNum = delivery.number
 			WriteTxLookupEntries(batch, delivery.number, delivery.hashes)
 			blocks++
@@ -244,7 +243,7 @@ func indexTransactions(db ethdb.Database, from uint64, to uint64, interrupt chan
 	case <-interrupt:
 		log.Debug("Transaction indexing interrupted", "blocks", blocks, "txs", txs, "tail", lastNum, "elapsed", common.PrettyDuration(time.Since(start)))
 	default:
-		log.Debug("Indexed transactions", "blocks", blocks, "txs", txs, "tail", lastNum, "elapsed", common.PrettyDuration(time.Since(start)))
+		log.Info("Indexed transactions", "blocks", blocks, "txs", txs, "tail", lastNum, "elapsed", common.PrettyDuration(time.Since(start)))
 	}
 }
 
@@ -283,7 +282,7 @@ func unindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt ch
 		// we expect the first number to come in to be [from]. Therefore, setting
 		// nextNum to from means that the prqueue gap-evaluation will work correctly
 		nextNum = from
-		queue   = prque.New[int64, *blockTxHashes](nil)
+		queue   = prque.New(nil)
 		// for stats reporting
 		blocks, txs = 0, 0
 	)
@@ -300,7 +299,7 @@ func unindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt ch
 			if hook != nil && !hook(nextNum) {
 				break
 			}
-			delivery := queue.PopItem()
+			delivery := queue.PopItem().(*blockTxHashes)
 			nextNum = delivery.number + 1
 			DeleteTxLookupEntries(batch, delivery.hashes)
 			txs += len(delivery.hashes)
@@ -336,7 +335,7 @@ func unindexTransactions(db ethdb.Database, from uint64, to uint64, interrupt ch
 	case <-interrupt:
 		log.Debug("Transaction unindexing interrupted", "blocks", blocks, "txs", txs, "tail", to, "elapsed", common.PrettyDuration(time.Since(start)))
 	default:
-		log.Debug("Unindexed transactions", "blocks", blocks, "txs", txs, "tail", to, "elapsed", common.PrettyDuration(time.Since(start)))
+		log.Info("Unindexed transactions", "blocks", blocks, "txs", txs, "tail", to, "elapsed", common.PrettyDuration(time.Since(start)))
 	}
 }
 

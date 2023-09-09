@@ -20,8 +20,8 @@ import (
 	"errors"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
 )
 
 // senderFromServer is a types.Signer that remembers the sender address returned by the RPC

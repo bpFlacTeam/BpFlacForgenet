@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"strings"
 
-	"wodchain/accounts/abi"
+	"github.com/wodTeam/Wod_Chain/accounts/abi"
 	fuzz "github.com/google/gofuzz"
 )
 

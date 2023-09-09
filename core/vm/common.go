@@ -17,8 +17,8 @@
 package vm
 
 import (
-	"wodchain/common"
-	"wodchain/common/math"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/math"
 	"github.com/holiman/uint256"
 )
 

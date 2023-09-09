@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/state/snapshot"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // Constants to match up protocol versions and messages
@@ -104,7 +104,7 @@ func (p *AccountRangePacket) Unpack() ([]common.Hash, [][]byte, error) {
 		accounts = make([][]byte, len(p.Accounts))
 	)
 	for i, acc := range p.Accounts {
-		val, err := types.FullAccountRLP(acc.Body)
+		val, err := snapshot.FullAccountRLP(acc.Body)
 		if err != nil {
 			return nil, nil, fmt.Errorf("invalid account %x: %v", acc.Body, err)
 		}

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"wodchain/metrics"
+	"github.com/wodTeam/Wod_Chain/metrics"
 )
 
 var (

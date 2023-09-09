@@ -19,7 +19,7 @@ package params
 import (
 	"math/big"
 
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 // DAOForkBlockExtra is the block header extra-data field to set for the DAO fork

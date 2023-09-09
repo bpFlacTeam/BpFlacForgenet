@@ -17,7 +17,7 @@
 package server
 
 import (
-	"wodchain/metrics"
+	"github.com/wodTeam/Wod_Chain/metrics"
 )
 
 var (

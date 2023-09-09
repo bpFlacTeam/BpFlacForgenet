@@ -21,14 +21,14 @@ import (
 	"encoding/binary"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/lru"
-	"wodchain/common/mclock"
-	"wodchain/ethdb"
-	"wodchain/les/utils"
-	"wodchain/log"
-	"wodchain/p2p/enode"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -57,7 +57,7 @@ var (
 
 type nodeDB struct {
 	db            ethdb.KeyValueStore
-	cache         *lru.Cache[string, utils.ExpiredValue]
+	cache         *lru.Cache
 	auxbuf        []byte                                              // 37-byte auxiliary buffer for key encoding
 	verbuf        [2]byte                                             // 2-byte auxiliary buffer for db version
 	evictCallBack func(mclock.AbsTime, bool, utils.ExpiredValue) bool // Callback to determine whether the balance can be evicted.
@@ -67,9 +67,10 @@ type nodeDB struct {
 }
 
 func newNodeDB(db ethdb.KeyValueStore, clock mclock.Clock) *nodeDB {
+	cache, _ := lru.New(balanceCacheLimit)
 	ndb := &nodeDB{
 		db:      db,
-		cache:   lru.NewCache[string, utils.ExpiredValue](balanceCacheLimit),
+		cache:   cache,
 		auxbuf:  make([]byte, 37),
 		clock:   clock,
 		closeCh: make(chan struct{}),
@@ -124,9 +125,8 @@ func (db *nodeDB) getOrNewBalance(id []byte, neg bool) utils.ExpiredValue {
 	key := db.key(id, neg)
 	item, exist := db.cache.Get(string(key))
 	if exist {
-		return item
+		return item.(utils.ExpiredValue)
 	}
-
 	var b utils.ExpiredValue
 	enc, err := db.db.Get(key)
 	if err != nil || len(enc) == 0 {

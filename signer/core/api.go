@@ -17,7 +17,6 @@
 package core
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -26,18 +25,17 @@ import (
 	"os"
 	"reflect"
 
-	"wodchain/accounts"
-	"wodchain/accounts/keystore"
-	"wodchain/accounts/scwallet"
-	"wodchain/accounts/usbwallet"
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/common/math"
-	"wodchain/internal/ethapi"
-	"wodchain/log"
-	"wodchain/rpc"
-	"wodchain/signer/core/apitypes"
-	"wodchain/signer/storage"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/accounts/scwallet"
+	"github.com/wodTeam/Wod_Chain/accounts/usbwallet"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/internal/ethapi"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rpc"
+	"github.com/wodTeam/Wod_Chain/signer/core/apitypes"
+	"github.com/wodTeam/Wod_Chain/signer/storage"
 )
 
 const (
@@ -411,7 +409,7 @@ func (api *SignerAPI) List(ctx context.Context) ([]common.Address, error) {
 
 // New creates a new password protected Account. The private key is protected with
 // the given password. Users are responsible to backup the private key that is stored
-// in the keystore location that was specified when this API was created.
+// in the keystore location thas was specified when this API was created.
 func (api *SignerAPI) New(ctx context.Context) (common.Address, error) {
 	if be := api.am.Backends(keystore.KeyStoreType); len(be) == 0 {
 		return common.Address{}, errors.New("password based accounts not supported")
@@ -553,7 +551,6 @@ func (api *SignerAPI) SignTransaction(ctx context.Context, args apitypes.SendTxA
 	// If we are in 'rejectMode', then reject rather than show the user warnings
 	if api.rejectMode {
 		if err := msgs.GetWarnings(); err != nil {
-			log.Info("Signing aborted due to warnings. In order to continue despite warnings, please use the flag '--advanced'.")
 			return nil, err
 		}
 	}
@@ -626,31 +623,11 @@ func (api *SignerAPI) SignGnosisSafeTx(ctx context.Context, signerAddress common
 	// If we are in 'rejectMode', then reject rather than show the user warnings
 	if api.rejectMode {
 		if err := msgs.GetWarnings(); err != nil {
-			log.Info("Signing aborted due to warnings. In order to continue despite warnings, please use the flag '--advanced'.")
 			return nil, err
 		}
 	}
 	typedData := gnosisTx.ToTypedData()
-	// might aswell error early.
-	// we are expected to sign. If our calculated hash does not match what they want,
-	// The gnosis safetx input contains a 'safeTxHash' which is the expected safeTxHash that
-	sighash, _, err := apitypes.TypedDataAndHash(typedData)
-	if err != nil {
-		return nil, err
-	}
-	if !bytes.Equal(sighash, gnosisTx.InputExpHash.Bytes()) {
-		// It might be the case that the json is missing chain id.
-		if gnosisTx.ChainId == nil {
-			gnosisTx.ChainId = (*math.HexOrDecimal256)(api.chainID)
-			typedData = gnosisTx.ToTypedData()
-			sighash, _, _ = apitypes.TypedDataAndHash(typedData)
-			if !bytes.Equal(sighash, gnosisTx.InputExpHash.Bytes()) {
-				return nil, fmt.Errorf("mismatched safeTxHash; have %#x want %#x", sighash, gnosisTx.InputExpHash[:])
-			}
-		}
-	}
 	signature, preimage, err := api.signTypedData(ctx, signerAddress, typedData, msgs)
-
 	if err != nil {
 		return nil, err
 	}
@@ -658,7 +635,7 @@ func (api *SignerAPI) SignGnosisSafeTx(ctx context.Context, signerAddress common
 
 	gnosisTx.Signature = signature
 	gnosisTx.SafeTxHash = common.BytesToHash(preimage)
-	gnosisTx.Sender = *checkSummedSender // Must be checksummed to be accepted by relay
+	gnosisTx.Sender = *checkSummedSender // Must be checksumed to be accepted by relay
 
 	return &gnosisTx, nil
 }

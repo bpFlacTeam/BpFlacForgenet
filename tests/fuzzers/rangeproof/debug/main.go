@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"wodchain/tests/fuzzers/rangeproof"
+	"github.com/wodTeam/Wod_Chain/tests/fuzzers/rangeproof"
 )
 
 func main() {

@@ -19,13 +19,13 @@ package core
 import (
 	"context"
 
-	"wodchain/internal/ethapi"
-	"wodchain/log"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/internal/ethapi"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 type StdIOUI struct {
-	client *rpc.Client
+	client rpc.Client
 }
 
 func NewStdIOUI() *StdIOUI {
@@ -33,7 +33,7 @@ func NewStdIOUI() *StdIOUI {
 	if err != nil {
 		log.Crit("Could not create stdio client", "err", err)
 	}
-	ui := &StdIOUI{client: client}
+	ui := &StdIOUI{client: *client}
 	return ui
 }
 

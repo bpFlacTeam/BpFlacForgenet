@@ -19,19 +19,18 @@ package ethtest
 import (
 	"compress/gzip"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
 	"os"
 	"strings"
 
-	"wodchain/common"
-	"wodchain/core"
-	"wodchain/core/forkid"
-	"wodchain/core/types"
-	"wodchain/params"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/forkid"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 type Chain struct {
@@ -77,7 +76,7 @@ func (c *Chain) RootAt(height int) common.Hash {
 
 // ForkID gets the fork id of the chain.
 func (c *Chain) ForkID() forkid.ID {
-	return forkid.NewID(c.chainConfig, c.blocks[0].Hash(), uint64(c.Len()), c.blocks[0].Time())
+	return forkid.NewID(c.chainConfig, c.blocks[0].Hash(), uint64(c.Len()))
 }
 
 // Shorten returns a copy chain of a desired height from the imported
@@ -99,7 +98,7 @@ func (c *Chain) Head() *types.Block {
 
 func (c *Chain) GetHeaders(req *GetBlockHeaders) ([]*types.Header, error) {
 	if req.Amount < 1 {
-		return nil, errors.New("no block headers requested")
+		return nil, fmt.Errorf("no block headers requested")
 	}
 
 	headers := make([]*types.Header, req.Amount)

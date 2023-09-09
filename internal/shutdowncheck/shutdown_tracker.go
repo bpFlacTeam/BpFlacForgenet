@@ -19,10 +19,10 @@ package shutdowncheck
 import (
 	"time"
 
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/ethdb"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // ShutdownTracker is a service that reports previous unclean shutdowns

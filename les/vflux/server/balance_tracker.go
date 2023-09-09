@@ -20,12 +20,12 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/ethdb"
-	"wodchain/les/utils"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/enr"
-	"wodchain/p2p/nodestate"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/p2p/nodestate"
 )
 
 const (

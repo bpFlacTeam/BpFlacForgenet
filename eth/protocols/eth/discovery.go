@@ -17,10 +17,10 @@
 package eth
 
 import (
-	"wodchain/core"
-	"wodchain/core/forkid"
-	"wodchain/p2p/enode"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/forkid"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // enrEntry is the ENR entry which advertises `eth` protocol on the discovery.
@@ -59,8 +59,7 @@ func StartENRUpdater(chain *core.BlockChain, ln *enode.LocalNode) {
 
 // currentENREntry constructs an `eth` ENR entry based on the current state of the chain.
 func currentENREntry(chain *core.BlockChain) *enrEntry {
-	head := chain.CurrentHeader()
 	return &enrEntry{
-		ForkID: forkid.NewID(chain.Config(), chain.Genesis().Hash(), head.Number.Uint64(), head.Time),
+		ForkID: forkid.NewID(chain.Config(), chain.Genesis().Hash(), chain.CurrentHeader().Number.Uint64()),
 	}
 }

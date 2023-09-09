@@ -26,8 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wodchain/common/bitutil"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/common/bitutil"
+	"github.com/wodTeam/Wod_Chain/crypto"
 )
 
 // bloomIndexes represents the bit indexes inside the bloom filter that belong
@@ -83,7 +83,7 @@ type Matcher struct {
 	retrievals chan chan *Retrieval // Retriever processes waiting for task allocations
 	deliveries chan *Retrieval      // Retriever processes waiting for task response deliveries
 
-	running atomic.Bool // Atomic flag whether a session is live or not
+	running uint32 // Atomic flag whether a session is live or not
 }
 
 // NewMatcher creates a new pipeline for retrieving bloom bit streams and doing
@@ -146,10 +146,10 @@ func (m *Matcher) addScheduler(idx uint) {
 // channel is closed.
 func (m *Matcher) Start(ctx context.Context, begin, end uint64, results chan uint64) (*MatcherSession, error) {
 	// Make sure we're not creating concurrent sessions
-	if m.running.Swap(true) {
+	if atomic.SwapUint32(&m.running, 1) == 1 {
 		return nil, errors.New("matcher already running")
 	}
-	defer m.running.Store(false)
+	defer atomic.StoreUint32(&m.running, 0)
 
 	// Initiate a new matching round
 	session := &MatcherSession{
@@ -612,7 +612,7 @@ func (s *MatcherSession) Multiplex(batch int, wait time.Duration, mux chan chan 
 				return
 
 			case <-time.After(wait):
-				// Throttling up, fetch whatever is available
+				// Throttling up, fetch whatever's available
 			}
 		}
 		// Allocate as much as we can handle and request servicing

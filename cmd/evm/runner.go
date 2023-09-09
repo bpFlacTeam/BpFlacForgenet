@@ -28,20 +28,18 @@ import (
 	"testing"
 	"time"
 
-	"wodchain/cmd/evm/internal/compiler"
-	"wodchain/cmd/utils"
-	"wodchain/common"
-	"wodchain/core"
-	"wodchain/core/rawdb"
-	"wodchain/core/state"
-	"wodchain/core/types"
-	"wodchain/core/vm"
-	"wodchain/core/vm/runtime"
-	"wodchain/eth/tracers/logger"
-	"wodchain/internal/flags"
-	"wodchain/log"
-	"wodchain/params"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/cmd/evm/internal/compiler"
+	"github.com/wodTeam/Wod_Chain/cmd/utils"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/state"
+	"github.com/wodTeam/Wod_Chain/core/vm"
+	"github.com/wodTeam/Wod_Chain/core/vm/runtime"
+	"github.com/wodTeam/Wod_Chain/eth/tracers/logger"
+	"github.com/wodTeam/Wod_Chain/internal/flags"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/params"
 	"github.com/urfave/cli/v2"
 )
 
@@ -127,8 +125,6 @@ func runCmd(ctx *cli.Context) error {
 		sender        = common.BytesToAddress([]byte("sender"))
 		receiver      = common.BytesToAddress([]byte("receiver"))
 		genesisConfig *core.Genesis
-		preimages     = ctx.Bool(DumpFlag.Name)
-		blobHashes    []common.Hash // TODO (MariusVanDerWijden) implement blob hashes in state tests
 	)
 	if ctx.Bool(MachineFlag.Name) {
 		tracer = logger.NewJSONLogger(logconfig, os.Stdout)
@@ -143,12 +139,10 @@ func runCmd(ctx *cli.Context) error {
 		genesisConfig = gen
 		db := rawdb.NewMemoryDatabase()
 		genesis := gen.MustCommit(db)
-		sdb := state.NewDatabaseWithConfig(db, &trie.Config{Preimages: preimages})
-		statedb, _ = state.New(genesis.Root(), sdb, nil)
+		statedb, _ = state.New(genesis.Root(), state.NewDatabase(db), nil)
 		chainConfig = gen.Config
 	} else {
-		sdb := state.NewDatabaseWithConfig(rawdb.NewMemoryDatabase(), &trie.Config{Preimages: preimages})
-		statedb, _ = state.New(types.EmptyRootHash, sdb, nil)
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		genesisConfig = new(core.Genesis)
 	}
 	if ctx.String(SenderFlag.Name) != "" {
@@ -215,12 +209,12 @@ func runCmd(ctx *cli.Context) error {
 		GasPrice:    flags.GlobalBig(ctx, PriceFlag.Name),
 		Value:       flags.GlobalBig(ctx, ValueFlag.Name),
 		Difficulty:  genesisConfig.Difficulty,
-		Time:        genesisConfig.Timestamp,
+		Time:        new(big.Int).SetUint64(genesisConfig.Timestamp),
 		Coinbase:    genesisConfig.Coinbase,
 		BlockNumber: new(big.Int).SetUint64(genesisConfig.Number),
-		BlobHashes:  blobHashes,
 		EVMConfig: vm.Config{
 			Tracer: tracer,
+			Debug:  ctx.Bool(DebugFlag.Name) || ctx.Bool(MachineFlag.Name),
 		},
 	}
 
@@ -280,7 +274,8 @@ func runCmd(ctx *cli.Context) error {
 	output, leftOverGas, stats, err := timedExec(bench, execFunc)
 
 	if ctx.Bool(DumpFlag.Name) {
-		statedb.Commit(genesisConfig.Number, true)
+		statedb.Commit(true)
+		statedb.IntermediateRoot(true)
 		fmt.Println(string(statedb.Dump(nil)))
 	}
 

@@ -20,7 +20,7 @@ import (
 	"math"
 	"math/rand"
 
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 type (

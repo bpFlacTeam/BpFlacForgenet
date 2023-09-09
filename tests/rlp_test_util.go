@@ -24,7 +24,7 @@ import (
 	"math/big"
 	"strings"
 
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // RLPTest is the JSON structure of a single RLP test.
@@ -59,7 +59,7 @@ func FromHex(s string) ([]byte, error) {
 func (t *RLPTest) Run() error {
 	outb, err := FromHex(t.Out)
 	if err != nil {
-		return errors.New("invalid hex in Out")
+		return fmt.Errorf("invalid hex in Out")
 	}
 
 	// Handle simple decoding tests with no actual In value.
@@ -87,7 +87,7 @@ func checkDecodeInterface(b []byte, isValid bool) error {
 	case isValid && err != nil:
 		return fmt.Errorf("decoding failed: %v", err)
 	case !isValid && err == nil:
-		return errors.New("decoding of invalid value succeeded")
+		return fmt.Errorf("decoding of invalid value succeeded")
 	}
 	return nil
 }

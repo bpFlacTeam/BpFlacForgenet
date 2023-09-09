@@ -2,7 +2,7 @@
 
 package test
 
-import "wodchain/rlp"
+import "github.com/wodTeam/Wod_Chain/rlp"
 
 type Test struct {
 	RawValue          rlp.RawValue

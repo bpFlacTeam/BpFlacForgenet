@@ -20,21 +20,20 @@ import (
 	"crypto/ecdsa"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/core"
-	"wodchain/core/txpool"
-	"wodchain/eth/ethconfig"
-	"wodchain/ethdb"
-	"wodchain/les/flowcontrol"
-	vfs "wodchain/les/vflux/server"
-	"wodchain/light"
-	"wodchain/log"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/enr"
-	"wodchain/params"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/les/flowcontrol"
+	vfs "github.com/wodTeam/Wod_Chain/les/vflux/server"
+	"github.com/wodTeam/Wod_Chain/light"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 var (
@@ -50,7 +49,7 @@ type ethBackend interface {
 	BloomIndexer() *core.ChainIndexer
 	ChainDb() ethdb.Database
 	Synced() bool
-	TxPool() *txpool.TxPool
+	TxPool() *core.TxPool
 }
 
 type LesServer struct {
@@ -117,6 +116,7 @@ func NewLesServer(node *node.Node, e ethBackend, config *ethconfig.Config) (*Les
 	}
 	srv.handler = newServerHandler(srv, e.BlockChain(), e.ChainDb(), e.TxPool(), issync)
 	srv.costTracker, srv.minCapacity = newCostTracker(e.ChainDb(), config)
+	srv.oracle = srv.setupOracle(node, e.BlockChain().Genesis().Hash(), config)
 
 	// Initialize the bloom trie indexer.
 	e.BloomIndexer().AddChildIndexer(srv.bloomTrieIndexer)
@@ -141,6 +141,12 @@ func NewLesServer(node *node.Node, e ethBackend, config *ethconfig.Config) (*Les
 	srv.clientPool.Start()
 	srv.clientPool.SetDefaultFactors(defaultPosFactors, defaultNegFactors)
 	srv.vfluxServer.Register(srv.clientPool, "les", "Ethereum light client service")
+
+	checkpoint := srv.latestLocalCheckpoint()
+	if !checkpoint.Empty() {
+		log.Info("Loaded latest checkpoint", "section", checkpoint.SectionIndex, "head", checkpoint.SectionHead,
+			"chtroot", checkpoint.CHTRoot, "bloomroot", checkpoint.BloomRoot)
+	}
 	srv.chtIndexer.Start(e.BlockChain())
 
 	node.RegisterProtocols(srv.Protocols())
@@ -151,6 +157,10 @@ func NewLesServer(node *node.Node, e ethBackend, config *ethconfig.Config) (*Les
 
 func (s *LesServer) APIs() []rpc.API {
 	return []rpc.API{
+		{
+			Namespace: "les",
+			Service:   NewLightAPI(&s.lesCommons),
+		},
 		{
 			Namespace: "les",
 			Service:   NewLightServerAPI(s),

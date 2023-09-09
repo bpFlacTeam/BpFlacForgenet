@@ -19,8 +19,8 @@ package client
 import (
 	"io"
 
-	"wodchain/les/utils"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 const basketFactor = 1000000 // reference basket amount and value scale factor

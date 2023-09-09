@@ -24,9 +24,9 @@ import (
 	"net"
 	"time"
 
-	"wodchain/common/math"
-	"wodchain/crypto"
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 )
 
 // node represents a host on the network.

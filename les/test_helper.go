@@ -25,30 +25,32 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"wodchain/accounts/abi/bind/backends"
-	"wodchain/common"
-	"wodchain/common/mclock"
-	"wodchain/consensus"
-	"wodchain/consensus/ethash"
-	"wodchain/core"
-	"wodchain/core/forkid"
-	"wodchain/core/rawdb"
-	"wodchain/core/txpool"
-	"wodchain/core/txpool/legacypool"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/eth/ethconfig"
-	"wodchain/ethdb"
-	"wodchain/event"
-	"wodchain/les/flowcontrol"
-	vfs "wodchain/les/vflux/server"
-	"wodchain/light"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/accounts/abi/bind"
+	"github.com/wodTeam/Wod_Chain/accounts/abi/bind/backends"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/consensus"
+	"github.com/wodTeam/Wod_Chain/consensus/ethash"
+	"github.com/wodTeam/Wod_Chain/contracts/checkpointoracle/contract"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/forkid"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/les/checkpointoracle"
+	"github.com/wodTeam/Wod_Chain/les/flowcontrol"
+	vfs "github.com/wodTeam/Wod_Chain/les/vflux/server"
+	"github.com/wodTeam/Wod_Chain/light"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 var (
@@ -69,11 +71,18 @@ var (
 	testEventEmitterCode = common.Hex2Bytes("60606040523415600e57600080fd5b7f57050ab73f6b9ebdd9f76b8d4997793f48cf956e965ee070551b9ca0bb71584e60405160405180910390a160358060476000396000f3006060604052600080fd00a165627a7a723058203f727efcad8b5811f8cb1fc2620ce5e8c63570d697aef968172de296ea3994140029")
 
 	// Checkpoint oracle relative fields
+	oracleAddr   common.Address
 	signerKey, _ = crypto.GenerateKey()
 	signerAddr   = crypto.PubkeyToAddress(signerKey.PublicKey)
 )
 
 var (
+	// The block frequency for creating checkpoint(only used in test)
+	sectionSize = big.NewInt(128)
+
+	// The number of confirmations needed to generate a checkpoint(only used in test).
+	processConfirms = big.NewInt(1)
+
 	// The token bucket buffer limit for testing purpose.
 	testBufLimit = uint64(1000000)
 
@@ -107,7 +116,11 @@ func prepare(n int, backend *backends.SimulatedBackend) {
 		case 0:
 			// Builtin-block
 			//    number: 1
-			//    txs:    1
+			//    txs:    2
+
+			// deploy checkpoint contract
+			auth, _ := bind.NewKeyedTransactorWithChainID(bankKey, big.NewInt(1337))
+			oracleAddr, _, _, _ = contract.DeployCheckpointOracle(auth, backend, []common.Address{signerAddr}, sectionSize, processConfirms, big.NewInt(1))
 
 			// bankUser transfers some ether to user1
 			nonce, _ := backend.PendingNonceAt(ctx, bankAddr)
@@ -177,7 +190,7 @@ func testIndexers(db ethdb.Database, odr light.OdrBackend, config *light.Indexer
 	return indexers[:]
 }
 
-func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, indexers []*core.ChainIndexer, db ethdb.Database, peers *serverPeerSet) (*clientHandler, func()) {
+func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, indexers []*core.ChainIndexer, db ethdb.Database, peers *serverPeerSet, ulcServers []string, ulcFraction int) (*clientHandler, func()) {
 	var (
 		evmux  = new(event.TypeMux)
 		engine = ethash.NewFaker()
@@ -187,10 +200,28 @@ func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, index
 			GasLimit: 100000000,
 			BaseFee:  big.NewInt(params.InitialBaseFee),
 		}
+		oracle *checkpointoracle.CheckpointOracle
 	)
 	genesis := gspec.MustCommit(db)
-	chain, _ := light.NewLightChain(odr, gspec.Config, engine)
-
+	chain, _ := light.NewLightChain(odr, gspec.Config, engine, nil)
+	if indexers != nil {
+		checkpointConfig := &params.CheckpointOracleConfig{
+			Address:   crypto.CreateAddress(bankAddr, 0),
+			Signers:   []common.Address{signerAddr},
+			Threshold: 1,
+		}
+		getLocal := func(index uint64) params.TrustedCheckpoint {
+			chtIndexer := indexers[0]
+			sectionHead := chtIndexer.SectionHead(index)
+			return params.TrustedCheckpoint{
+				SectionIndex: index,
+				SectionHead:  sectionHead,
+				CHTRoot:      light.GetChtRoot(db, index, sectionHead),
+				BloomRoot:    light.GetBloomTrieRoot(db, index, sectionHead),
+			}
+		}
+		oracle = checkpointoracle.New(checkpointConfig, getLocal)
+	}
 	client := &LightEthereum{
 		lesCommons: lesCommons{
 			genesis:     genesis.Hash(),
@@ -198,6 +229,7 @@ func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, index
 			chainConfig: params.AllEthashProtocolChanges,
 			iConfig:     light.TestClientIndexerConfig,
 			chainDb:     db,
+			oracle:      oracle,
 			chainReader: chain,
 			closeCh:     make(chan struct{}),
 		},
@@ -210,8 +242,12 @@ func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, index
 		eventMux:   evmux,
 		merger:     consensus.NewMerger(rawdb.NewMemoryDatabase()),
 	}
-	client.handler = newClientHandler(client)
+	client.handler = newClientHandler(ulcServers, ulcFraction, nil, client)
 
+	if client.oracle != nil {
+		client.oracle.Start(backend)
+	}
+	client.handler.start()
 	return client.handler, func() {
 		client.handler.stop()
 	}
@@ -225,6 +261,7 @@ func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db ethdb.Da
 			GasLimit: 100000000,
 			BaseFee:  big.NewInt(params.InitialBaseFee),
 		}
+		oracle *checkpointoracle.CheckpointOracle
 	)
 	genesis := gspec.MustCommit(db)
 
@@ -232,12 +269,27 @@ func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db ethdb.Da
 	simulation := backends.NewSimulatedBackendWithDatabase(db, gspec.Alloc, 100000000)
 	prepare(blocks, simulation)
 
-	txpoolConfig := legacypool.DefaultConfig
+	txpoolConfig := core.DefaultTxPoolConfig
 	txpoolConfig.Journal = ""
-
-	pool := legacypool.New(txpoolConfig, simulation.Blockchain())
-	txpool, _ := txpool.New(new(big.Int).SetUint64(txpoolConfig.PriceLimit), simulation.Blockchain(), []txpool.SubPool{pool})
-
+	txpool := core.NewTxPool(txpoolConfig, gspec.Config, simulation.Blockchain())
+	if indexers != nil {
+		checkpointConfig := &params.CheckpointOracleConfig{
+			Address:   crypto.CreateAddress(bankAddr, 0),
+			Signers:   []common.Address{signerAddr},
+			Threshold: 1,
+		}
+		getLocal := func(index uint64) params.TrustedCheckpoint {
+			chtIndexer := indexers[0]
+			sectionHead := chtIndexer.SectionHead(index)
+			return params.TrustedCheckpoint{
+				SectionIndex: index,
+				SectionHead:  sectionHead,
+				CHTRoot:      light.GetChtRoot(db, index, sectionHead),
+				BloomRoot:    light.GetBloomTrieRoot(db, index, sectionHead),
+			}
+		}
+		oracle = checkpointoracle.New(checkpointConfig, getLocal)
+	}
 	server := &LesServer{
 		lesCommons: lesCommons{
 			genesis:     genesis.Hash(),
@@ -246,6 +298,7 @@ func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db ethdb.Da
 			iConfig:     light.TestServerIndexerConfig,
 			chainDb:     db,
 			chainReader: simulation.Blockchain(),
+			oracle:      oracle,
 			closeCh:     make(chan struct{}),
 		},
 		peers:        newClientPeerSet(),
@@ -262,6 +315,9 @@ func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db ethdb.Da
 	server.clientPool.Start()
 	server.clientPool.SetLimits(10000, 10000) // Assign enough capacity for clientpool
 	server.handler = newServerHandler(server, simulation.Blockchain(), db, txpool, func() bool { return true })
+	if server.oracle != nil {
+		server.oracle.Start(simulation)
+	}
 	server.servingQueue.setThreads(4)
 	server.handler.start()
 	closer := func() { server.Stop() }
@@ -306,8 +362,7 @@ func (p *testPeer) handshakeWithServer(t *testing.T, td *big.Int, head common.Ha
 }
 
 // handshakeWithClient executes the handshake with the remote client peer.
-// (used by temporarily disabled tests)
-/*func (p *testPeer) handshakeWithClient(t *testing.T, td *big.Int, head common.Hash, headNum uint64, genesis common.Hash, forkID forkid.ID, costList RequestCostList, recentTxLookup uint64) {
+func (p *testPeer) handshakeWithClient(t *testing.T, td *big.Int, head common.Hash, headNum uint64, genesis common.Hash, forkID forkid.ID, costList RequestCostList, recentTxLookup uint64) {
 	// It only works for the simulated client peer
 	if p.speer == nil {
 		t.Fatal("handshake for server peer only")
@@ -337,7 +392,7 @@ func (p *testPeer) handshakeWithServer(t *testing.T, td *big.Int, head common.Ha
 	if err := p2p.Send(p.app, StatusMsg, &sendList); err != nil {
 		t.Fatalf("status send: %v", err)
 	}
-}*/
+}
 
 // close terminates the local side of the peer, notifying the remote protocol
 // manager of termination.
@@ -382,7 +437,7 @@ func newTestPeerPair(name string, version int, server *serverHandler, client *cl
 			return nil, nil, fmt.Errorf("failed to establish protocol connection %v", err)
 		default:
 		}
-		if peer1.serving.Load() && peer2.serving.Load() {
+		if atomic.LoadUint32(&peer1.serving) == 1 && atomic.LoadUint32(&peer2.serving) == 1 {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -405,8 +460,7 @@ type testClient struct {
 }
 
 // newRawPeer creates a new server peer connects to the server and do the handshake.
-// (used by temporarily disabled tests)
-/*func (client *testClient) newRawPeer(t *testing.T, name string, version int, recentTxLookup uint64) (*testPeer, func(), <-chan error) {
+func (client *testClient) newRawPeer(t *testing.T, name string, version int, recentTxLookup uint64) (*testPeer, func(), <-chan error) {
 	// Create a message pipe to communicate through
 	app, net := p2p.MsgPipe()
 
@@ -434,7 +488,7 @@ type testClient struct {
 		head    = client.handler.backend.blockchain.CurrentHeader()
 		td      = client.handler.backend.blockchain.GetTd(head.Hash(), head.Number.Uint64())
 	)
-	forkID := forkid.NewID(client.handler.backend.blockchain.Config(), genesis.Hash(), head.Number.Uint64(), head.Time)
+	forkID := forkid.NewID(client.handler.backend.blockchain.Config(), genesis.Hash(), head.Number.Uint64())
 	tp.handshakeWithClient(t, td, head.Hash(), head.Number.Uint64(), genesis.Hash(), forkID, testCostList(0), recentTxLookup) // disable flow control by default
 
 	// Ensure the connection is established or exits when any error occurs
@@ -444,7 +498,7 @@ type testClient struct {
 			return nil, nil, nil
 		default:
 		}
-		if peer.serving.Load() {
+		if atomic.LoadUint32(&peer.serving) == 1 {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -454,7 +508,7 @@ type testClient struct {
 		tp.close()
 	}
 	return tp, closePeer, errCh
-}*/
+}
 
 // testServer represents a server object for testing with necessary auxiliary fields.
 type testServer struct {
@@ -498,7 +552,7 @@ func (server *testServer) newRawPeer(t *testing.T, name string, version int) (*t
 		head    = server.handler.blockchain.CurrentHeader()
 		td      = server.handler.blockchain.GetTd(head.Hash(), head.Number.Uint64())
 	)
-	forkID := forkid.NewID(server.handler.blockchain.Config(), genesis.Hash(), head.Number.Uint64(), head.Time)
+	forkID := forkid.NewID(server.handler.blockchain.Config(), genesis.Hash(), head.Number.Uint64())
 	tp.handshakeWithServer(t, td, head.Hash(), head.Number.Uint64(), genesis.Hash(), forkID)
 
 	// Ensure the connection is established or exits when any error occurs
@@ -508,7 +562,7 @@ func (server *testServer) newRawPeer(t *testing.T, name string, version int) (*t
 			return nil, nil, nil
 		default:
 		}
-		if peer.serving.Load() {
+		if atomic.LoadUint32(&peer.serving) == 1 {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -522,12 +576,14 @@ func (server *testServer) newRawPeer(t *testing.T, name string, version int) (*t
 
 // testnetConfig wraps all the configurations for testing network.
 type testnetConfig struct {
-	blocks    int
-	protocol  int
-	indexFn   indexerCallback
-	simClock  bool
-	connect   bool
-	nopruning bool
+	blocks      int
+	protocol    int
+	indexFn     indexerCallback
+	ulcServers  []string
+	ulcFraction int
+	simClock    bool
+	connect     bool
+	nopruning   bool
 }
 
 func newClientServerEnv(t *testing.T, config testnetConfig) (*testServer, *testClient, func()) {
@@ -552,7 +608,7 @@ func newClientServerEnv(t *testing.T, config testnetConfig) (*testServer, *testC
 	odr.SetIndexers(ccIndexer, cbIndexer, cbtIndexer)
 
 	server, b, serverClose := newTestServerHandler(config.blocks, sindexers, sdb, clock)
-	client, clientClose := newTestClientHandler(b, odr, cIndexers, cdb, speers)
+	client, clientClose := newTestClientHandler(b, odr, cIndexers, cdb, speers, config.ulcServers, config.ulcFraction)
 
 	scIndexer.Start(server.blockchain)
 	sbIndexer.Start(server.blockchain)
@@ -568,6 +624,7 @@ func newClientServerEnv(t *testing.T, config testnetConfig) (*testServer, *testC
 	)
 	if config.connect {
 		done := make(chan struct{})
+		client.syncEnd = func(_ *types.Header) { close(done) }
 		cpeer, speer, err = newTestPeerPair("peer", config.protocol, server, client, false)
 		if err != nil {
 			t.Fatalf("Failed to connect testing peers %v", err)

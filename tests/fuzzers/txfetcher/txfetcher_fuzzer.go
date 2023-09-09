@@ -23,11 +23,10 @@ import (
 	"math/rand"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/mclock"
-	"wodchain/core/txpool"
-	"wodchain/core/types"
-	"wodchain/eth/fetcher"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/eth/fetcher"
 )
 
 var (
@@ -80,7 +79,7 @@ func Fuzz(input []byte) int {
 
 	f := fetcher.NewTxFetcherForTests(
 		func(common.Hash) bool { return false },
-		func(txs []*txpool.Transaction) []error {
+		func(txs []*types.Transaction) []error {
 			return make([]error, len(txs))
 		},
 		func(string, []common.Hash) error { return nil },

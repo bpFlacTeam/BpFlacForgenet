@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"wodchain/log"
-	"wodchain/tests/fuzzers/vflux"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/tests/fuzzers/vflux"
 )
 
 func main() {

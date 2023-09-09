@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"wodchain/core/forkid"
-	"wodchain/p2p/enr"
-	"wodchain/params"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/core/forkid"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -59,7 +59,7 @@ var (
 
 func nodesetInfo(ctx *cli.Context) error {
 	if ctx.NArg() < 1 {
-		return errors.New("need nodes file as argument")
+		return fmt.Errorf("need nodes file as argument")
 	}
 
 	ns := loadNodesJSON(ctx.Args().First())
@@ -98,7 +98,7 @@ func showAttributeCounts(ns nodeSet) {
 
 func nodesetFilter(ctx *cli.Context) error {
 	if ctx.NArg() < 1 {
-		return errors.New("need nodes file as argument")
+		return fmt.Errorf("need nodes file as argument")
 	}
 	// Parse -limit.
 	limit, err := parseFilterLimit(ctx.Args().Tail())
@@ -181,7 +181,7 @@ func parseFilterLimit(args []string) (int, error) {
 	return limit, nil
 }
 
-// andFilter parses node filters in args and returns a single filter that requires all
+// andFilter parses node filters in args and and returns a single filter that requires all
 // of them to match.
 func andFilter(args []string) (nodeFilter, error) {
 	checks, err := parseFilters(args)
@@ -229,8 +229,12 @@ func ethFilter(args []string) (nodeFilter, error) {
 	switch args[0] {
 	case "mainnet":
 		filter = forkid.NewStaticFilter(params.MainnetChainConfig, params.MainnetGenesisHash)
+	case "rinkeby":
+		filter = forkid.NewStaticFilter(params.RinkebyChainConfig, params.RinkebyGenesisHash)
 	case "goerli":
 		filter = forkid.NewStaticFilter(params.GoerliChainConfig, params.GoerliGenesisHash)
+	case "ropsten":
+		filter = forkid.NewStaticFilter(params.RopstenChainConfig, params.RopstenGenesisHash)
 	case "sepolia":
 		filter = forkid.NewStaticFilter(params.SepoliaChainConfig, params.SepoliaGenesisHash)
 	default:

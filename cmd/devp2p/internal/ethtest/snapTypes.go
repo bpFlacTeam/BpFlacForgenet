@@ -16,7 +16,7 @@
 
 package ethtest
 
-import "wodchain/eth/protocols/snap"
+import "github.com/wodTeam/Wod_Chain/eth/protocols/snap"
 
 // GetAccountRange represents an account range query.
 type GetAccountRange snap.GetAccountRangePacket

@@ -17,19 +17,13 @@
 package graphql
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"sync"
-	"time"
 
-	"wodchain/eth/filters"
-	"wodchain/internal/ethapi"
-	"wodchain/node"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/eth/filters"
+	"github.com/wodTeam/Wod_Chain/internal/ethapi"
+	"github.com/wodTeam/Wod_Chain/node"
 	"github.com/graph-gophers/graphql-go"
-	gqlErrors "github.com/graph-gophers/graphql-go/errors"
 )
 
 type handler struct {
@@ -47,60 +41,18 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var (
-		ctx       = r.Context()
-		responded sync.Once
-		timer     *time.Timer
-		cancel    context.CancelFunc
-	)
-	ctx, cancel = context.WithCancel(ctx)
-	defer cancel()
-
-	if timeout, ok := rpc.ContextRequestTimeout(ctx); ok {
-		timer = time.AfterFunc(timeout, func() {
-			responded.Do(func() {
-				// Cancel request handling.
-				cancel()
-
-				// Create the timeout response.
-				response := &graphql.Response{
-					Errors: []*gqlErrors.QueryError{{Message: "request timed out"}},
-				}
-				responseJSON, err := json.Marshal(response)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				// Setting this disables gzip compression in package node.
-				w.Header().Set("transfer-encoding", "identity")
-
-				// Flush the response. Since we are writing close to the response timeout,
-				// chunked transfer encoding must be disabled by setting content-length.
-				w.Header().Set("content-type", "application/json")
-				w.Header().Set("content-length", strconv.Itoa(len(responseJSON)))
-				w.Write(responseJSON)
-				if flush, ok := w.(http.Flusher); ok {
-					flush.Flush()
-				}
-			})
-		})
+	response := h.Schema.Exec(r.Context(), params.Query, params.OperationName, params.Variables)
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(response.Errors) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	response := h.Schema.Exec(ctx, params.Query, params.OperationName, params.Variables)
-	timer.Stop()
-	responded.Do(func() {
-		responseJSON, err := json.Marshal(response)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if len(response.Errors) > 0 {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(responseJSON)
-	})
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(responseJSON)
 }
 
 // New constructs a new GraphQL service instance.
@@ -122,7 +74,6 @@ func newHandler(stack *node.Node, backend ethapi.Backend, filterSystem *filters.
 	handler := node.NewHTTPHandlerStack(h, cors, vhosts, nil)
 
 	stack.RegisterHandler("GraphQL UI", "/graphql/ui", GraphiQL{})
-	stack.RegisterHandler("GraphQL UI", "/graphql/ui/", GraphiQL{})
 	stack.RegisterHandler("GraphQL", "/graphql", handler)
 	stack.RegisterHandler("GraphQL", "/graphql/", handler)
 

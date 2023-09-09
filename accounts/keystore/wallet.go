@@ -19,10 +19,10 @@ package keystore
 import (
 	"math/big"
 
-	"wodchain"
-	"wodchain/accounts"
-	"wodchain/core/types"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original

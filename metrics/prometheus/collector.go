@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"wodchain/metrics"
+	"github.com/wodTeam/Wod_Chain/metrics"
 )
 
 var (
@@ -47,10 +47,6 @@ func newCollector() *collector {
 }
 
 func (c *collector) addCounter(name string, m metrics.Counter) {
-	c.writeGaugeCounter(name, m.Count())
-}
-
-func (c *collector) addCounterFloat64(name string, m metrics.CounterFloat64) {
 	c.writeGaugeCounter(name, m.Count())
 }
 

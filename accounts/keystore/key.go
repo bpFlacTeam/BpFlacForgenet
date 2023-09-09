@@ -28,9 +28,9 @@ import (
 	"strings"
 	"time"
 
-	"wodchain/accounts"
-	"wodchain/common"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/crypto"
 	"github.com/google/uuid"
 )
 

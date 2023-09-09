@@ -25,12 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wodchain/log"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/simulations"
-	"wodchain/p2p/simulations/adapters"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/simulations"
+	"github.com/wodTeam/Wod_Chain/p2p/simulations/adapters"
 )
 
 var adapterType = flag.String("adapter", "sim", `node adapter to use (one of "sim", "exec" or "docker")`)
@@ -91,7 +91,7 @@ func main() {
 type pingPongService struct {
 	id       enode.ID
 	log      log.Logger
-	received atomic.Int64
+	received int64
 }
 
 func newPingPongService(id enode.ID) *pingPongService {
@@ -125,7 +125,7 @@ func (p *pingPongService) Info() interface{} {
 	return struct {
 		Received int64 `json:"received"`
 	}{
-		p.received.Load(),
+		atomic.LoadInt64(&p.received),
 	}
 }
 
@@ -139,7 +139,7 @@ const (
 func (p *pingPongService) Run(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 	log := p.log.New("peer.id", peer.ID())
 
-	errC := make(chan error, 1)
+	errC := make(chan error)
 	go func() {
 		for range time.Tick(10 * time.Second) {
 			log.Info("sending ping")
@@ -162,7 +162,7 @@ func (p *pingPongService) Run(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 				return
 			}
 			log.Info("received message", "msg.code", msg.Code, "msg.payload", string(payload))
-			p.received.Add(1)
+			atomic.AddInt64(&p.received, 1)
 			if msg.Code == pingMsgCode {
 				log.Info("sending pong")
 				go p2p.Send(rw, pongMsgCode, "PONG")

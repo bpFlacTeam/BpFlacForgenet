@@ -41,10 +41,10 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/accounts"
-	"wodchain/common"
-	"wodchain/event"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/log"
 	pcsc "github.com/gballet/go-libpcsclite"
 )
 

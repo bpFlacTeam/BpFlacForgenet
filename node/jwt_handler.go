@@ -51,7 +51,7 @@ func (handler *jwtHandler) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 		strToken = strings.TrimPrefix(auth, "Bearer ")
 	}
 	if len(strToken) == 0 {
-		http.Error(out, "missing token", http.StatusUnauthorized)
+		http.Error(out, "missing token", http.StatusForbidden)
 		return
 	}
 	// We explicitly set only HS256 allowed, and also disables the
@@ -63,17 +63,17 @@ func (handler *jwtHandler) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 
 	switch {
 	case err != nil:
-		http.Error(out, err.Error(), http.StatusUnauthorized)
+		http.Error(out, err.Error(), http.StatusForbidden)
 	case !token.Valid:
-		http.Error(out, "invalid token", http.StatusUnauthorized)
+		http.Error(out, "invalid token", http.StatusForbidden)
 	case !claims.VerifyExpiresAt(time.Now(), false): // optional
-		http.Error(out, "token is expired", http.StatusUnauthorized)
+		http.Error(out, "token is expired", http.StatusForbidden)
 	case claims.IssuedAt == nil:
-		http.Error(out, "missing issued-at", http.StatusUnauthorized)
+		http.Error(out, "missing issued-at", http.StatusForbidden)
 	case time.Since(claims.IssuedAt.Time) > jwtExpiryTimeout:
-		http.Error(out, "stale token", http.StatusUnauthorized)
+		http.Error(out, "stale token", http.StatusForbidden)
 	case time.Until(claims.IssuedAt.Time) > jwtExpiryTimeout:
-		http.Error(out, "future token", http.StatusUnauthorized)
+		http.Error(out, "future token", http.StatusForbidden)
 	default:
 		handler.next.ServeHTTP(out, r)
 	}

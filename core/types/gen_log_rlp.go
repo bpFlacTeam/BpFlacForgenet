@@ -5,7 +5,7 @@
 
 package types
 
-import "wodchain/rlp"
+import "github.com/wodTeam/Wod_Chain/rlp"
 import "io"
 
 func (obj *rlpLog) EncodeRLP(_w io.Writer) error {

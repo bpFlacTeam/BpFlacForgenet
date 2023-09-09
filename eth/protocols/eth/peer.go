@@ -21,11 +21,11 @@ import (
 	"math/rand"
 	"sync"
 
-	mapset "github.com/deckarep/golang-set/v2"
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/p2p"
-	"wodchain/rlp"
+	mapset "github.com/deckarep/golang-set"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 const (
@@ -188,7 +188,7 @@ func (p *Peer) markTransaction(hash common.Hash) {
 // not be managed directly.
 //
 // The reasons this is public is to allow packages using this protocol to write
-// tests that directly send messages without having to do the async queueing.
+// tests that directly send messages without having to do the asyn queueing.
 func (p *Peer) SendTransactions(txs types.Transactions) error {
 	// Mark all the transactions as known, but ensure we don't overflow our limits
 	for _, tx := range txs {
@@ -210,29 +210,16 @@ func (p *Peer) AsyncSendTransactions(hashes []common.Hash) {
 	}
 }
 
-// sendPooledTransactionHashes66 sends transaction hashes to the peer and includes
+// sendPooledTransactionHashes sends transaction hashes to the peer and includes
 // them in its transaction hash set for future reference.
 //
 // This method is a helper used by the async transaction announcer. Don't call it
 // directly as the queueing (memory) and transmission (bandwidth) costs should
 // not be managed directly.
-func (p *Peer) sendPooledTransactionHashes66(hashes []common.Hash) error {
+func (p *Peer) sendPooledTransactionHashes(hashes []common.Hash) error {
 	// Mark all the transactions as known, but ensure we don't overflow our limits
 	p.knownTxs.Add(hashes...)
-	return p2p.Send(p.rw, NewPooledTransactionHashesMsg, NewPooledTransactionHashesPacket66(hashes))
-}
-
-// sendPooledTransactionHashes68 sends transaction hashes (tagged with their type
-// and size) to the peer and includes them in its transaction hash set for future
-// reference.
-//
-// This method is a helper used by the async transaction announcer. Don't call it
-// directly as the queueing (memory) and transmission (bandwidth) costs should
-// not be managed directly.
-func (p *Peer) sendPooledTransactionHashes68(hashes []common.Hash, types []byte, sizes []uint32) error {
-	// Mark all the transactions as known, but ensure we don't overflow our limits
-	p.knownTxs.Add(hashes...)
-	return p2p.Send(p.rw, NewPooledTransactionHashesMsg, NewPooledTransactionHashesPacket68{Types: types, Sizes: sizes, Hashes: hashes})
+	return p2p.Send(p.rw, NewPooledTransactionHashesMsg, NewPooledTransactionHashesPacket(hashes))
 }
 
 // AsyncSendPooledTransactionHashes queues a list of transactions hashes to eventually
@@ -502,7 +489,7 @@ func (p *Peer) RequestTxs(hashes []common.Hash) error {
 
 // knownCache is a cache for known hashes.
 type knownCache struct {
-	hashes mapset.Set[common.Hash]
+	hashes mapset.Set
 	max    int
 }
 
@@ -510,7 +497,7 @@ type knownCache struct {
 func newKnownCache(max int) *knownCache {
 	return &knownCache{
 		max:    max,
-		hashes: mapset.NewSet[common.Hash](),
+		hashes: mapset.NewSet(),
 	}
 }
 

@@ -37,10 +37,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"wodchain/accounts"
-	"wodchain/common"
-	"wodchain/common/math"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/crypto"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
@@ -120,7 +120,7 @@ func (ks keyStorePassphrase) StoreKey(filename string, key *Key, auth string) er
 				"This indicates that the keystore is corrupted. \n" +
 				"The corrupted file is stored at \n%v\n" +
 				"Please file a ticket at:\n\n" +
-				"https://wodchain/issues." +
+				"https://github.com/wodTeam/Wod_Chain/issues." +
 				"The error was : %s"
 			//lint:ignore ST1005 This is a message for the user
 			return fmt.Errorf(msg, tmpName, err)
@@ -225,13 +225,10 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := crypto.ToECDSA(keyBytes)
-	if err != nil {
-		return nil, fmt.Errorf("invalid key: %w", err)
-	}
+	key := crypto.ToECDSAUnsafe(keyBytes)
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
-		return nil, fmt.Errorf("invalid UUID: %w", err)
+		return nil, err
 	}
 	return &Key{
 		Id:         id,

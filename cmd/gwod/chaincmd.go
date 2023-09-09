@@ -26,20 +26,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wodchain/cmd/utils"
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/core"
-	"wodchain/core/rawdb"
-	"wodchain/core/state"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/ethdb"
-	"wodchain/internal/flags"
-	"wodchain/log"
-	"wodchain/metrics"
-	"wodchain/node"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/cmd/utils"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/state"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/internal/flags"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/metrics"
+	"github.com/wodTeam/Wod_Chain/node"
 	"github.com/urfave/cli/v2"
 )
 
@@ -49,7 +48,7 @@ var (
 		Name:      "init",
 		Usage:     "Bootstrap and initialize a new genesis block",
 		ArgsUsage: "<genesisPath>",
-		Flags:     flags.Merge([]cli.Flag{utils.CachePreimagesFlag}, utils.DatabasePathFlags),
+		Flags:     utils.DatabasePathFlags,
 		Description: `
 The init command initializes a new genesis block and definition for the network.
 This is a destructive action and changes the network in which you will be
@@ -62,10 +61,9 @@ It expects the genesis file as argument.`,
 		Name:      "dumpgenesis",
 		Usage:     "Dumps genesis block JSON configuration to stdout",
 		ArgsUsage: "",
-		Flags:     append([]cli.Flag{utils.DataDirFlag}, utils.NetworkFlags...),
+		Flags:     utils.NetworkFlags,
 		Description: `
-The dumpgenesis command prints the genesis configuration of the network preset
-if one is set.  Otherwise it prints the genesis from the datadir.`,
+The dumpgenesis command dumps the genesis block configuration in JSON format to stdout.`,
 	}
 	importCommand = &cli.Command{
 		Action:    importChain,
@@ -189,16 +187,12 @@ func initGenesis(ctx *cli.Context) error {
 	// Open and initialise both full and light databases
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
-
 	for _, name := range []string{"chaindata", "lightchaindata"} {
 		chaindb, err := stack.OpenDatabaseWithFreezer(name, 0, 0, ctx.String(utils.AncientFlag.Name), "", false)
 		if err != nil {
 			utils.Fatalf("Failed to open database: %v", err)
 		}
-		triedb := trie.NewDatabaseWithConfig(chaindb, &trie.Config{
-			Preimages: ctx.Bool(utils.CachePreimagesFlag.Name),
-		})
-		_, hash, err := core.SetupGenesisBlock(chaindb, triedb, genesis)
+		_, hash, err := core.SetupGenesisBlock(chaindb, genesis)
 		if err != nil {
 			utils.Fatalf("Failed to write genesis block: %v", err)
 		}
@@ -209,39 +203,14 @@ func initGenesis(ctx *cli.Context) error {
 }
 
 func dumpGenesis(ctx *cli.Context) error {
-	// if there is a testnet preset enabled, dump that
-	if utils.IsNetworkPreset(ctx) {
-		genesis := utils.MakeGenesis(ctx)
-		if err := json.NewEncoder(os.Stdout).Encode(genesis); err != nil {
-			utils.Fatalf("could not encode genesis: %s", err)
-		}
-		return nil
+	// TODO(rjl493456442) support loading from the custom datadir
+	genesis := utils.MakeGenesis(ctx)
+	if genesis == nil {
+		genesis = core.DefaultGenesisBlock()
 	}
-	// dump whatever already exists in the datadir
-	stack, _ := makeConfigNode(ctx)
-	for _, name := range []string{"chaindata", "lightchaindata"} {
-		db, err := stack.OpenDatabase(name, 0, 0, "", true)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return err
-			}
-			continue
-		}
-		genesis, err := core.ReadGenesis(db)
-		if err != nil {
-			utils.Fatalf("failed to read genesis: %s", err)
-		}
-		db.Close()
-
-		if err := json.NewEncoder(os.Stdout).Encode(*genesis); err != nil {
-			utils.Fatalf("could not encode stored genesis: %s", err)
-		}
-		return nil
+	if err := json.NewEncoder(os.Stdout).Encode(genesis); err != nil {
+		utils.Fatalf("could not encode genesis")
 	}
-	if ctx.IsSet(utils.DataDirFlag.Name) {
-		utils.Fatalf("no existing datadir at %s", stack.Config().DataDir)
-	}
-	utils.Fatalf("no network preset provided.  no exisiting genesis in the default datadir")
 	return nil
 }
 
@@ -257,20 +226,20 @@ func importChain(ctx *cli.Context) error {
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
-	chain, db := utils.MakeChain(ctx, stack, false)
+	chain, db := utils.MakeChain(ctx, stack)
 	defer db.Close()
 
 	// Start periodically gathering memory profiles
-	var peakMemAlloc, peakMemSys atomic.Uint64
+	var peakMemAlloc, peakMemSys uint64
 	go func() {
 		stats := new(runtime.MemStats)
 		for {
 			runtime.ReadMemStats(stats)
-			if peakMemAlloc.Load() < stats.Alloc {
-				peakMemAlloc.Store(stats.Alloc)
+			if atomic.LoadUint64(&peakMemAlloc) < stats.Alloc {
+				atomic.StoreUint64(&peakMemAlloc, stats.Alloc)
 			}
-			if peakMemSys.Load() < stats.Sys {
-				peakMemSys.Store(stats.Sys)
+			if atomic.LoadUint64(&peakMemSys) < stats.Sys {
+				atomic.StoreUint64(&peakMemSys, stats.Sys)
 			}
 			time.Sleep(5 * time.Second)
 		}
@@ -303,8 +272,8 @@ func importChain(ctx *cli.Context) error {
 	mem := new(runtime.MemStats)
 	runtime.ReadMemStats(mem)
 
-	fmt.Printf("Object memory: %.3f MB current, %.3f MB peak\n", float64(mem.Alloc)/1024/1024, float64(peakMemAlloc.Load())/1024/1024)
-	fmt.Printf("System memory: %.3f MB current, %.3f MB peak\n", float64(mem.Sys)/1024/1024, float64(peakMemSys.Load())/1024/1024)
+	fmt.Printf("Object memory: %.3f MB current, %.3f MB peak\n", float64(mem.Alloc)/1024/1024, float64(atomic.LoadUint64(&peakMemAlloc))/1024/1024)
+	fmt.Printf("System memory: %.3f MB current, %.3f MB peak\n", float64(mem.Sys)/1024/1024, float64(atomic.LoadUint64(&peakMemSys))/1024/1024)
 	fmt.Printf("Allocations:   %.3f million\n", float64(mem.Mallocs)/1000000)
 	fmt.Printf("GC pause:      %v\n\n", time.Duration(mem.PauseTotalNs))
 
@@ -332,7 +301,7 @@ func exportChain(ctx *cli.Context) error {
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
 
-	chain, _ := utils.MakeChain(ctx, stack, true)
+	chain, _ := utils.MakeChain(ctx, stack)
 	start := time.Now()
 
 	var err error
@@ -349,8 +318,8 @@ func exportChain(ctx *cli.Context) error {
 		if first < 0 || last < 0 {
 			utils.Fatalf("Export error: block number must be greater than 0\n")
 		}
-		if head := chain.CurrentSnapBlock(); uint64(last) > head.Number.Uint64() {
-			utils.Fatalf("Export error: block number %d larger than head block %d\n", uint64(last), head.Number.Uint64())
+		if head := chain.CurrentFastBlock(); uint64(last) > head.NumberU64() {
+			utils.Fatalf("Export error: block number %d larger than head block %d\n", uint64(last), head.NumberU64())
 		}
 		err = utils.ExportAppendChain(chain, fp, uint64(first), uint64(last))
 	}
@@ -465,10 +434,7 @@ func dump(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	config := &trie.Config{
-		Preimages: true, // always enable preimage lookup
-	}
-	state, err := state.New(root, state.NewDatabaseWithConfig(db, config), nil)
+	state, err := state.New(root, state.NewDatabase(db), nil)
 	if err != nil {
 		return err
 	}
@@ -478,7 +444,7 @@ func dump(ctx *cli.Context) error {
 		if conf.OnlyWithAddresses {
 			fmt.Fprintf(os.Stderr, "If you want to include accounts with missing preimages, you need iterative output, since"+
 				" otherwise the accounts will overwrite each other in the resulting mapping.")
-			return errors.New("incompatible options")
+			return fmt.Errorf("incompatible options")
 		}
 		fmt.Println(string(state.Dump(conf)))
 	}

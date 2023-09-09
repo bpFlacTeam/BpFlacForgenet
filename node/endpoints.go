@@ -21,8 +21,8 @@ import (
 	"net/http"
 	"time"
 
-	"wodchain/log"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 // StartHTTPEndpoint starts the HTTP RPC endpoint.

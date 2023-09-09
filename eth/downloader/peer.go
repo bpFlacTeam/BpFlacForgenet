@@ -25,11 +25,11 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common"
-	"wodchain/eth/protocols/eth"
-	"wodchain/event"
-	"wodchain/log"
-	"wodchain/p2p/msgrate"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/eth"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/msgrate"
 )
 
 const (

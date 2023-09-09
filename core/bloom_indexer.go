@@ -20,12 +20,12 @@ import (
 	"context"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/bitutil"
-	"wodchain/core/bloombits"
-	"wodchain/core/rawdb"
-	"wodchain/core/types"
-	"wodchain/ethdb"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/bitutil"
+	"github.com/wodTeam/Wod_Chain/core/bloombits"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/ethdb"
 )
 
 const (

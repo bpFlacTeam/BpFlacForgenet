@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"wodchain/tests/fuzzers/les"
+	"github.com/wodTeam/Wod_Chain/tests/fuzzers/les"
 )
 
 func main() {

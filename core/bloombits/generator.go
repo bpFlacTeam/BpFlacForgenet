@@ -19,7 +19,7 @@ package bloombits
 import (
 	"errors"
 
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain/core/types"
 )
 
 var (

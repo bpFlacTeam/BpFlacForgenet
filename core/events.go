@@ -17,8 +17,8 @@
 package core
 
 import (
-	"wodchain/common"
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
 )
 
 // NewTxsEvent is posted when a batch of transactions enter the transaction pool.

@@ -5,10 +5,10 @@ package logger
 import (
 	"encoding/json"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/common/math"
-	"wodchain/core/vm"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/core/vm"
 	"github.com/holiman/uint256"
 )
 

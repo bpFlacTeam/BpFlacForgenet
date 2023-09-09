@@ -23,8 +23,8 @@ import (
 	"os"
 	"strings"
 
-	"wodchain/signer/core/apitypes"
-	"wodchain/signer/fourbyte"
+	"github.com/wodTeam/Wod_Chain/signer/core/apitypes"
+	"github.com/wodTeam/Wod_Chain/signer/fourbyte"
 )
 
 func init() {

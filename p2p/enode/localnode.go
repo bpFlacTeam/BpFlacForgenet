@@ -26,9 +26,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wodchain/log"
-	"wodchain/p2p/enr"
-	"wodchain/p2p/netutil"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/p2p/netutil"
 )
 
 const (

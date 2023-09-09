@@ -20,12 +20,12 @@ import (
 	"bytes"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/log"
-	"wodchain/params"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // ReadTxLookupEntry retrieves the positional metadata associated with a transaction
@@ -130,12 +130,8 @@ func ReadReceipt(db ethdb.Reader, hash common.Hash, config *params.ChainConfig) 
 	if blockHash == (common.Hash{}) {
 		return nil, common.Hash{}, 0, 0
 	}
-	blockHeader := ReadHeader(db, blockHash, *blockNumber)
-	if blockHeader == nil {
-		return nil, common.Hash{}, 0, 0
-	}
 	// Read all the receipts from the block and return the one with the matching hash
-	receipts := ReadReceipts(db, blockHash, *blockNumber, blockHeader.Time, config)
+	receipts := ReadReceipts(db, blockHash, *blockNumber, config)
 	for receiptIndex, receipt := range receipts {
 		if receipt.TxHash == hash {
 			return receipt, blockHash, *blockNumber, uint64(receiptIndex)

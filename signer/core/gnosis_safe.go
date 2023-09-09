@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/common/math"
-	"wodchain/signer/core/apitypes"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/signer/core/apitypes"
 )
 
 // GnosisSafeTx is a type to parse the safe-tx returned by the relayer,

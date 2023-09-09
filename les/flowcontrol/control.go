@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 const (

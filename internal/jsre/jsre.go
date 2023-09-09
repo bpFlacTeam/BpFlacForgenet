@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 // JSRE is a JS runtime environment embedding the goja interpreter.

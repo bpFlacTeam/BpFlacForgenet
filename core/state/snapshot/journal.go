@@ -25,12 +25,12 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/ethdb"
-	"wodchain/log"
-	"wodchain/rlp"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/trie"
 )
 
 const journalVersion uint64 = 0
@@ -120,7 +120,7 @@ func loadAndParseJournal(db ethdb.KeyValueStore, base *diskLayer) (snapshot, jou
 }
 
 // loadSnapshot loads a pre-existing state snapshot backed by a key-value store.
-func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, root common.Hash, cache int, recovery bool, noBuild bool) (snapshot, bool, error) {
+func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, root common.Hash, recovery bool) (snapshot, bool, error) {
 	// If snapshotting is disabled (initial sync in progress), don't do anything,
 	// wait for the chain to permit us to do something meaningful
 	if rawdb.ReadSnapshotDisabled(diskdb) {
@@ -140,7 +140,7 @@ func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, root common
 	}
 	snapshot, generator, err := loadAndParseJournal(diskdb, base)
 	if err != nil {
-		log.Warn("Failed to load journal", "error", err)
+		log.Warn("Failed to load new-format journal", "error", err)
 		return nil, false, err
 	}
 	// Entire snapshot journal loaded, sanity check the head. If the loaded
@@ -164,16 +164,13 @@ func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, root common
 		// disk layer.
 		log.Warn("Snapshot is not continuous with chain", "snaproot", head, "chainroot", root)
 	}
-	// Load the disk layer status from the generator if it's not complete
+	// Everything loaded correctly, resume any suspended operations
 	if !generator.Done {
+		// Whether or not wiping was in progress, load any generator progress too
 		base.genMarker = generator.Marker
 		if base.genMarker == nil {
 			base.genMarker = []byte{}
 		}
-	}
-	// Everything loaded correctly, resume any suspended operations
-	// if the background generation is allowed
-	if !generator.Done && !noBuild {
 		base.genPending = make(chan struct{})
 		base.genAbort = make(chan chan *generatorStats)
 
@@ -305,7 +302,7 @@ func iterateJournal(db ethdb.KeyValueReader, callback journalCallback) error {
 	}
 	if baseRoot := rawdb.ReadSnapshotRoot(db); baseRoot != parent {
 		log.Warn("Loaded snapshot journal", "diskroot", baseRoot, "diffs", "unmatched")
-		return errors.New("mismatched disk and diff layers")
+		return fmt.Errorf("mismatched disk and diff layers")
 	}
 	for {
 		var (

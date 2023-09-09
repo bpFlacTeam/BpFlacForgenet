@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"wodchain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
 )
 
 // FromHex returns the bytes represented by the hexadecimal string s.

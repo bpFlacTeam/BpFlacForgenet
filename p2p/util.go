@@ -19,7 +19,7 @@ package p2p
 import (
 	"container/heap"
 
-	"wodchain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
 )
 
 // expHeap tracks strings and their expiry time.
@@ -70,7 +70,6 @@ func (h *expHeap) Pop() interface{} {
 	old := *h
 	n := len(old)
 	x := old[n-1]
-	old[n-1] = expItem{}
 	*h = old[0 : n-1]
 	return x
 }

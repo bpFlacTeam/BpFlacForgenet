@@ -20,9 +20,9 @@ import (
 	"context"
 	"sync"
 
-	"wodchain"
-	"wodchain/event"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 // DownloaderAPI provides an API which gives information about the current synchronisation status.

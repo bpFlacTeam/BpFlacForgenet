@@ -22,11 +22,11 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/les/utils"
-	"wodchain/les/vflux"
-	"wodchain/log"
-	"wodchain/p2p/enode"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/les/vflux"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 type (

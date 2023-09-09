@@ -17,10 +17,10 @@
 package les
 
 import (
-	"wodchain/core/forkid"
-	"wodchain/p2p/dnsdisc"
-	"wodchain/p2p/enode"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/core/forkid"
+	"github.com/wodTeam/Wod_Chain/p2p/dnsdisc"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // lesEntry is the "les" ENR entry. This is set for LES servers only.

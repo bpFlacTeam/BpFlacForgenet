@@ -23,12 +23,12 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/ethdb"
-	"wodchain/les/utils"
-	"wodchain/log"
-	"wodchain/p2p/enode"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 const (
@@ -233,7 +233,7 @@ func (vt *ValueTracker) StatsExpirer() *utils.Expirer {
 	return &vt.statsExpirer
 }
 
-// StatsExpFactor returns the current expiration factor so that other values can be expired
+// StatsExpirer returns the current expiration factor so that other values can be expired
 // with the same rate as the service value statistics.
 func (vt *ValueTracker) StatsExpFactor() utils.ExpirationFactor {
 	vt.statsExpLock.RLock()

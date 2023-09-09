@@ -23,12 +23,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/eth/ethconfig"
-	"wodchain/ethdb"
-	"wodchain/les/flowcontrol"
-	"wodchain/log"
-	"wodchain/metrics"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/les/flowcontrol"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/metrics"
 )
 
 const makeCostStats = false // make request cost statistics during operation

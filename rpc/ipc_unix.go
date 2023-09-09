@@ -26,20 +26,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"wodchain/log"
-)
-
-const (
-	// On Linux, sun_path is 108 bytes in size
-	// see http://man7.org/linux/man-pages/man7/unix.7.html
-	maxPathSize = int(108)
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // ipcListen will create a Unix socket on the given endpoint.
 func ipcListen(endpoint string) (net.Listener, error) {
-	// account for null-terminator too
-	if len(endpoint)+1 > maxPathSize {
-		log.Warn(fmt.Sprintf("The ipc endpoint is longer than %d characters. ", maxPathSize-1),
+	if len(endpoint) > int(max_path_size) {
+		log.Warn(fmt.Sprintf("The ipc endpoint is longer than %d characters. ", max_path_size),
 			"endpoint", endpoint)
 	}
 

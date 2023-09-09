@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 )
 
 // Simulation provides a framework for running actions in a simulated network

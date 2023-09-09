@@ -22,12 +22,12 @@ import (
 	"errors"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/math"
-	"wodchain/core/rawdb"
-	"wodchain/ethdb"
-	"wodchain/ethdb/memorydb"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/ethdb/memorydb"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 const (

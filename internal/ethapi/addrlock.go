@@ -19,7 +19,7 @@ package ethapi
 import (
 	"sync"
 
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 type AddrLocker struct {

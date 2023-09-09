@@ -19,7 +19,7 @@ package tests
 import (
 	"testing"
 
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 func TestTransaction(t *testing.T) {

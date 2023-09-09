@@ -19,26 +19,24 @@ package tests
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/common/math"
-	"wodchain/core"
-	"wodchain/core/rawdb"
-	"wodchain/core/state"
-	"wodchain/core/state/snapshot"
-	"wodchain/core/types"
-	"wodchain/core/vm"
-	"wodchain/crypto"
-	"wodchain/ethdb"
-	"wodchain/params"
-	"wodchain/rlp"
-	"wodchain/trie"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/state"
+	"github.com/wodTeam/Wod_Chain/core/state/snapshot"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/core/vm"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -113,8 +111,6 @@ type stTransaction struct {
 	GasLimit             []uint64            `json:"gasLimit"`
 	Value                []string            `json:"value"`
 	PrivateKey           []byte              `json:"secretKey"`
-	BlobVersionedHashes  []common.Hash       `json:"blobVersionedHashes,omitempty"`
-	BlobGasFeeCap        *big.Int            `json:"maxFeePerBlobGas,omitempty"`
 }
 
 type stTransactionMarshaling struct {
@@ -124,7 +120,6 @@ type stTransactionMarshaling struct {
 	Nonce                math.HexOrDecimal64
 	GasLimit             []math.HexOrDecimal64
 	PrivateKey           hexutil.Bytes
-	BlobGasFeeCap        *math.HexOrDecimal256
 }
 
 // GetChainConfig takes a fork definition and returns a chain config.
@@ -164,53 +159,20 @@ func (t *StateTest) Subtests() []StateSubtest {
 	return sub
 }
 
-// checkError checks if the error returned by the state transition matches any expected error.
-// A failing expectation returns a wrapped version of the original error, if any,
-// or a new error detailing the failing expectation.
-// This function does not return or modify the original error, it only evaluates and returns expectations for the error.
-func (t *StateTest) checkError(subtest StateSubtest, err error) error {
-	expectedError := t.json.Post[subtest.Fork][subtest.Index].ExpectException
-	if err == nil && expectedError == "" {
-		return nil
-	}
-	if err == nil && expectedError != "" {
-		return fmt.Errorf("expected error %q, got no error", expectedError)
-	}
-	if err != nil && expectedError == "" {
-		return fmt.Errorf("unexpected error: %w", err)
-	}
-	if err != nil && expectedError != "" {
-		// Ignore expected errors (TODO MariusVanDerWijden check error string)
-		return nil
-	}
-	return nil
-}
-
 // Run executes a specific subtest and verifies the post-state and logs
 func (t *StateTest) Run(subtest StateSubtest, vmconfig vm.Config, snapshotter bool) (*snapshot.Tree, *state.StateDB, error) {
 	snaps, statedb, root, err := t.RunNoVerify(subtest, vmconfig, snapshotter)
-	if checkedErr := t.checkError(subtest, err); checkedErr != nil {
-		return snaps, statedb, checkedErr
-	}
-	// The error has been checked; if it was unexpected, it's already returned.
 	if err != nil {
-		// Here, an error exists but it was expected.
-		// We do not check the post state or logs.
-		return snaps, statedb, nil
+		return snaps, statedb, err
 	}
 	post := t.json.Post[subtest.Fork][subtest.Index]
 	// N.B: We need to do this in a two-step process, because the first Commit takes care
-	// of self-destructs, and we need to touch the coinbase _after_ it has potentially self-destructed.
+	// of suicides, and we need to touch the coinbase _after_ it has potentially suicided.
 	if root != common.Hash(post.Root) {
 		return snaps, statedb, fmt.Errorf("post state root mismatch: got %x, want %x", root, post.Root)
 	}
 	if logs := rlpHash(statedb.Logs()); logs != common.Hash(post.Logs) {
 		return snaps, statedb, fmt.Errorf("post state logs hash mismatch: got %x, want %x", logs, post.Logs)
-	}
-	// Re-init the post-state instance for further operation
-	statedb, err = state.New(root, statedb.Database(), snaps)
-	if err != nil {
-		return nil, nil, err
 	}
 	return snaps, statedb, nil
 }
@@ -259,9 +221,6 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	context.GetHash = vmTestBlockHash
 	context.BaseFee = baseFee
 	context.Random = nil
-	if t.json.Env.Difficulty != nil {
-		context.Difficulty = new(big.Int).Set(t.json.Env.Difficulty)
-	}
 	if config.IsLondon(new(big.Int)) && t.json.Env.Random != nil {
 		rnd := common.BigToHash(t.json.Env.Random)
 		context.Random = &rnd
@@ -272,19 +231,20 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	snapshot := statedb.Snapshot()
 	gaspool := new(core.GasPool)
 	gaspool.AddGas(block.GasLimit())
-	_, err = core.ApplyMessage(evm, msg, gaspool)
-	if err != nil {
+	if _, err := core.ApplyMessage(evm, msg, gaspool); err != nil {
 		statedb.RevertToSnapshot(snapshot)
 	}
 	// Add 0-value mining reward. This only makes a difference in the cases
 	// where
-	// - the coinbase self-destructed, or
+	// - the coinbase suicided, or
 	// - there are only 'bad' transactions, which aren't executed. In those cases,
 	//   the coinbase gets no txfee, so isn't created, and thus needs to be touched
 	statedb.AddBalance(block.Coinbase(), new(big.Int))
 	// Commit block
-	root, _ := statedb.Commit(block.NumberU64(), config.IsEIP158(block.Number()))
-	return snaps, statedb, root, err
+	statedb.Commit(config.IsEIP158(block.Number()))
+	// And _now_ get the state root
+	root := statedb.IntermediateRoot(config.IsEIP158(block.Number()))
+	return snaps, statedb, root, nil
 }
 
 func (t *StateTest) gasLimit(subtest StateSubtest) uint64 {
@@ -292,8 +252,8 @@ func (t *StateTest) gasLimit(subtest StateSubtest) uint64 {
 }
 
 func MakePreState(db ethdb.Database, accounts core.GenesisAlloc, snapshotter bool) (*snapshot.Tree, *state.StateDB) {
-	sdb := state.NewDatabaseWithConfig(db, &trie.Config{Preimages: true})
-	statedb, _ := state.New(types.EmptyRootHash, sdb, nil)
+	sdb := state.NewDatabase(db)
+	statedb, _ := state.New(common.Hash{}, sdb, nil)
 	for addr, a := range accounts {
 		statedb.SetCode(addr, a.Code)
 		statedb.SetNonce(addr, a.Nonce)
@@ -303,17 +263,11 @@ func MakePreState(db ethdb.Database, accounts core.GenesisAlloc, snapshotter boo
 		}
 	}
 	// Commit and re-open to start with a clean state.
-	root, _ := statedb.Commit(0, false)
+	root, _ := statedb.Commit(false)
 
 	var snaps *snapshot.Tree
 	if snapshotter {
-		snapconfig := snapshot.Config{
-			CacheSize:  1,
-			Recovery:   false,
-			NoBuild:    false,
-			AsyncBuild: false,
-		}
-		snaps, _ = snapshot.New(snapconfig, db, sdb.TrieDB(), root)
+		snaps, _ = snapshot.New(db, sdb.TrieDB(), 1, root, false, true, false)
 	}
 	statedb, _ = state.New(root, sdb, snaps)
 	return snaps, statedb
@@ -337,7 +291,7 @@ func (t *StateTest) genesis(config *params.ChainConfig) *core.Genesis {
 	return genesis
 }
 
-func (tx *stTransaction) toMessage(ps stPostState, baseFee *big.Int) (*core.Message, error) {
+func (tx *stTransaction) toMessage(ps stPostState, baseFee *big.Int) (core.Message, error) {
 	// Derive sender from private key if present.
 	var from common.Address
 	if len(tx.PrivateKey) > 0 {
@@ -402,23 +356,11 @@ func (tx *stTransaction) toMessage(ps stPostState, baseFee *big.Int) (*core.Mess
 			tx.MaxFeePerGas)
 	}
 	if gasPrice == nil {
-		return nil, errors.New("no gas price provided")
+		return nil, fmt.Errorf("no gas price provided")
 	}
 
-	msg := &core.Message{
-		From:          from,
-		To:            to,
-		Nonce:         tx.Nonce,
-		Value:         value,
-		GasLimit:      gasLimit,
-		GasPrice:      gasPrice,
-		GasFeeCap:     tx.MaxFeePerGas,
-		GasTipCap:     tx.MaxPriorityFeePerGas,
-		Data:          data,
-		AccessList:    accessList,
-		BlobHashes:    tx.BlobVersionedHashes,
-		BlobGasFeeCap: tx.BlobGasFeeCap,
-	}
+	msg := types.NewMessage(from, to, tx.Nonce, value, gasLimit, gasPrice,
+		tx.MaxFeePerGas, tx.MaxPriorityFeePerGas, data, accessList, false)
 	return msg, nil
 }
 

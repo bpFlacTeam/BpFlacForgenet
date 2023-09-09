@@ -21,15 +21,14 @@ import (
 	"errors"
 	"fmt"
 
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/core/state"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/ethdb"
-	"wodchain/rlp"
-	"wodchain/trie"
-	"wodchain/trie/trienode"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/core/state"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/trie"
 )
 
 var (
@@ -55,8 +54,8 @@ func (db *odrDatabase) OpenTrie(root common.Hash) (state.Trie, error) {
 	return &odrTrie{db: db, id: db.id}, nil
 }
 
-func (db *odrDatabase) OpenStorageTrie(stateRoot common.Hash, address common.Address, root common.Hash) (state.Trie, error) {
-	return &odrTrie{db: db, id: StorageTrieID(db.id, address, root)}, nil
+func (db *odrDatabase) OpenStorageTrie(addrHash, root common.Hash) (state.Trie, error) {
+	return &odrTrie{db: db, id: StorageTrieID(db.id, addrHash, root)}, nil
 }
 
 func (db *odrDatabase) CopyTrie(t state.Trie) state.Trie {
@@ -64,7 +63,8 @@ func (db *odrDatabase) CopyTrie(t state.Trie) state.Trie {
 	case *odrTrie:
 		cpy := &odrTrie{db: t.db, id: t.id}
 		if t.trie != nil {
-			cpy.trie = t.trie.Copy()
+			cpytrie := *t.trie
+			cpy.trie = &cpytrie
 		}
 		return cpy
 	default:
@@ -72,7 +72,7 @@ func (db *odrDatabase) CopyTrie(t state.Trie) state.Trie {
 	}
 }
 
-func (db *odrDatabase) ContractCode(addr common.Address, codeHash common.Hash) ([]byte, error) {
+func (db *odrDatabase) ContractCode(addrHash, codeHash common.Hash) ([]byte, error) {
 	if codeHash == sha3Nil {
 		return nil, nil
 	}
@@ -81,23 +81,19 @@ func (db *odrDatabase) ContractCode(addr common.Address, codeHash common.Hash) (
 		return code, nil
 	}
 	id := *db.id
-	id.AccountAddress = addr[:]
+	id.AccKey = addrHash[:]
 	req := &CodeRequest{Id: &id, Hash: codeHash}
 	err := db.backend.Retrieve(db.ctx, req)
 	return req.Data, err
 }
 
-func (db *odrDatabase) ContractCodeSize(addr common.Address, codeHash common.Hash) (int, error) {
-	code, err := db.ContractCode(addr, codeHash)
+func (db *odrDatabase) ContractCodeSize(addrHash, codeHash common.Hash) (int, error) {
+	code, err := db.ContractCode(addrHash, codeHash)
 	return len(code), err
 }
 
 func (db *odrDatabase) TrieDB() *trie.Database {
 	return nil
-}
-
-func (db *odrDatabase) DiskDB() ethdb.KeyValueStore {
-	panic("not implemented")
 }
 
 type odrTrie struct {
@@ -106,78 +102,66 @@ type odrTrie struct {
 	trie *trie.Trie
 }
 
-func (t *odrTrie) GetStorage(_ common.Address, key []byte) ([]byte, error) {
+func (t *odrTrie) TryGet(key []byte) ([]byte, error) {
 	key = crypto.Keccak256(key)
-	var enc []byte
+	var res []byte
 	err := t.do(key, func() (err error) {
-		enc, err = t.trie.Get(key)
+		res, err = t.trie.TryGet(key)
 		return err
 	})
-	if err != nil || len(enc) == 0 {
-		return nil, err
-	}
-	_, content, _, err := rlp.Split(enc)
-	return content, err
+	return res, err
 }
 
-func (t *odrTrie) GetAccount(address common.Address) (*types.StateAccount, error) {
-	var (
-		enc []byte
-		key = crypto.Keccak256(address.Bytes())
-	)
+func (t *odrTrie) TryGetAccount(key []byte) (*types.StateAccount, error) {
+	key = crypto.Keccak256(key)
+	var res types.StateAccount
 	err := t.do(key, func() (err error) {
-		enc, err = t.trie.Get(key)
-		return err
+		value, err := t.trie.TryGet(key)
+		if err != nil {
+			return err
+		}
+		if value == nil {
+			return nil
+		}
+		return rlp.DecodeBytes(value, &res)
 	})
-	if err != nil || len(enc) == 0 {
-		return nil, err
-	}
-	acct := new(types.StateAccount)
-	if err := rlp.DecodeBytes(enc, acct); err != nil {
-		return nil, err
-	}
-	return acct, nil
+	return &res, err
 }
 
-func (t *odrTrie) UpdateAccount(address common.Address, acc *types.StateAccount) error {
-	key := crypto.Keccak256(address.Bytes())
+func (t *odrTrie) TryUpdateAccount(key []byte, acc *types.StateAccount) error {
+	key = crypto.Keccak256(key)
 	value, err := rlp.EncodeToBytes(acc)
 	if err != nil {
 		return fmt.Errorf("decoding error in account update: %w", err)
 	}
 	return t.do(key, func() error {
-		return t.trie.Update(key, value)
+		return t.trie.TryUpdate(key, value)
 	})
 }
 
-func (t *odrTrie) UpdateContractCode(_ common.Address, _ common.Hash, _ []byte) error {
-	return nil
-}
-
-func (t *odrTrie) UpdateStorage(_ common.Address, key, value []byte) error {
-	key = crypto.Keccak256(key)
-	v, _ := rlp.EncodeToBytes(value)
-	return t.do(key, func() error {
-		return t.trie.Update(key, v)
-	})
-}
-
-func (t *odrTrie) DeleteStorage(_ common.Address, key []byte) error {
+func (t *odrTrie) TryUpdate(key, value []byte) error {
 	key = crypto.Keccak256(key)
 	return t.do(key, func() error {
-		return t.trie.Delete(key)
+		return t.trie.TryUpdate(key, value)
 	})
 }
 
-// DeleteAccount abstracts an account deletion from the trie.
-func (t *odrTrie) DeleteAccount(address common.Address) error {
-	key := crypto.Keccak256(address.Bytes())
+func (t *odrTrie) TryDelete(key []byte) error {
+	key = crypto.Keccak256(key)
 	return t.do(key, func() error {
-		return t.trie.Delete(key)
+		return t.trie.TryDelete(key)
 	})
 }
 
-func (t *odrTrie) Commit(collectLeaf bool) (common.Hash, *trienode.NodeSet, error) {
+// TryDeleteAccount abstracts an account deletion from the trie.
+func (t *odrTrie) TryDeleteAccount(key []byte) error {
+	key = crypto.Keccak256(key)
+	return t.do(key, func() error {
+		return t.trie.TryDelete(key)
+	})
+}
+
+func (t *odrTrie) Commit(collectLeaf bool) (common.Hash, *trie.NodeSet, error) {
 	if t.trie == nil {
 		return t.id.Root, nil, nil
 	}
@@ -191,15 +175,15 @@ func (t *odrTrie) Hash() common.Hash {
 	return t.trie.Hash()
 }
 
-func (t *odrTrie) NodeIterator(startkey []byte) (trie.NodeIterator, error) {
-	return newNodeIterator(t, startkey), nil
+func (t *odrTrie) NodeIterator(startkey []byte) trie.NodeIterator {
+	return newNodeIterator(t, startkey)
 }
 
 func (t *odrTrie) GetKey(sha []byte) []byte {
 	return nil
 }
 
-func (t *odrTrie) Prove(key []byte, proofDb ethdb.KeyValueWriter) error {
+func (t *odrTrie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error {
 	return errors.New("not implemented, needs client/server interface split")
 }
 
@@ -209,13 +193,11 @@ func (t *odrTrie) do(key []byte, fn func() error) error {
 	for {
 		var err error
 		if t.trie == nil {
-			var id *trie.ID
-			if len(t.id.AccountAddress) > 0 {
-				id = trie.StorageTrieID(t.id.StateRoot, crypto.Keccak256Hash(t.id.AccountAddress), t.id.Root)
-			} else {
-				id = trie.StateTrieID(t.id.StateRoot)
+			var owner common.Hash
+			if len(t.id.AccKey) > 0 {
+				owner = common.BytesToHash(t.id.AccKey)
 			}
-			t.trie, err = trie.New(id, trie.NewDatabase(t.db.backend.Database()))
+			t.trie, err = trie.New(owner, t.id.Root, trie.NewDatabase(t.db.backend.Database()))
 		}
 		if err == nil {
 			err = fn()
@@ -241,13 +223,11 @@ func newNodeIterator(t *odrTrie, startkey []byte) trie.NodeIterator {
 	// Open the actual non-ODR trie if that hasn't happened yet.
 	if t.trie == nil {
 		it.do(func() error {
-			var id *trie.ID
-			if len(t.id.AccountAddress) > 0 {
-				id = trie.StorageTrieID(t.id.StateRoot, crypto.Keccak256Hash(t.id.AccountAddress), t.id.Root)
-			} else {
-				id = trie.StateTrieID(t.id.StateRoot)
+			var owner common.Hash
+			if len(t.id.AccKey) > 0 {
+				owner = common.BytesToHash(t.id.AccKey)
 			}
-			t, err := trie.New(id, trie.NewDatabase(t.db.backend.Database()))
+			t, err := trie.New(owner, t.id.Root, trie.NewDatabase(t.db.backend.Database()))
 			if err == nil {
 				it.t.trie = t
 			}
@@ -255,11 +235,7 @@ func newNodeIterator(t *odrTrie, startkey []byte) trie.NodeIterator {
 		})
 	}
 	it.do(func() error {
-		var err error
-		it.NodeIterator, err = it.t.trie.NodeIterator(startkey)
-		if err != nil {
-			return err
-		}
+		it.NodeIterator = it.t.trie.NodeIterator(startkey)
 		return it.NodeIterator.Error()
 	})
 	return it

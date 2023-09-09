@@ -19,8 +19,8 @@ package downloader
 import (
 	"sync"
 
-	"wodchain/common"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // syncState starts downloading state with the given root hash.

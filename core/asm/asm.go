@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"wodchain/core/vm"
+	"github.com/wodTeam/Wod_Chain/core/vm"
 )
 
 // Iterator for disassembled EVM instructions

@@ -20,7 +20,7 @@ import (
 	"net"
 	"strings"
 
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // StartIPCEndpoint starts an IPC endpoint.

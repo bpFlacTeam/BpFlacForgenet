@@ -21,8 +21,8 @@ import (
 	"math"
 	"time"
 
-	"wodchain/les/utils"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 const (

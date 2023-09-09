@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
-	"wodchain/core/rawdb"
-	"wodchain/ethdb"
-	"wodchain/log"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // transitionStatus describes the status of eth1/2 transition. This switch

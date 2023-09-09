@@ -19,9 +19,9 @@ package trie
 import (
 	"sync"
 
-	"wodchain/common"
-	"wodchain/core/rawdb"
-	"wodchain/ethdb"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/ethdb"
 )
 
 // preimageStore is the store for caching preimages of node key.

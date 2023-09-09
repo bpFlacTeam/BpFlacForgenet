@@ -17,7 +17,6 @@
 package ethtest
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -25,13 +24,13 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/eth/protocols/eth"
-	"wodchain/internal/utesting"
-	"wodchain/p2p"
-	"wodchain/p2p/rlpx"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/eth"
+	"github.com/wodTeam/Wod_Chain/internal/utesting"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/rlpx"
 )
 
 var (
@@ -64,9 +63,8 @@ func (s *Suite) dial() (*Conn, error) {
 	conn.caps = []p2p.Cap{
 		{Name: "eth", Version: 66},
 		{Name: "eth", Version: 67},
-		{Name: "eth", Version: 68},
 	}
-	conn.ourHighestProtoVersion = 68
+	conn.ourHighestProtoVersion = 67
 	return &conn, nil
 }
 
@@ -186,7 +184,7 @@ loop:
 	}
 	// make sure eth protocol version is set for negotiation
 	if c.negotiatedProtoVersion == 0 {
-		return nil, errors.New("eth protocol version must be set in Conn")
+		return nil, fmt.Errorf("eth protocol version must be set in Conn")
 	}
 	if status == nil {
 		// default status message
@@ -359,15 +357,9 @@ func (s *Suite) waitAnnounce(conn *Conn, blockAnnouncement *NewBlock) error {
 				return fmt.Errorf("wrong block hash in announcement: expected %v, got %v", blockAnnouncement.Block.Hash(), hashes[0].Hash)
 			}
 			return nil
-
-		// ignore tx announcements from previous tests
-		case *NewPooledTransactionHashes66:
-			continue
 		case *NewPooledTransactionHashes:
+			// ignore tx announcements from previous tests
 			continue
-		case *Transactions:
-			continue
-
 		default:
 			return fmt.Errorf("unexpected: %s", pretty.Sdump(msg))
 		}

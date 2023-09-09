@@ -19,7 +19,7 @@ package bitutil
 import (
 	"bytes"
 
-	"wodchain/common/bitutil"
+	"github.com/wodTeam/Wod_Chain/common/bitutil"
 )
 
 // Fuzz implements a go-fuzz fuzzer method to test various encoding method

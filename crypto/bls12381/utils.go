@@ -20,7 +20,7 @@ import (
 	"errors"
 	"math/big"
 
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 func bigFromHex(hex string) *big.Int {

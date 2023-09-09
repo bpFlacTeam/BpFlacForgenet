@@ -23,11 +23,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
-	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -35,25 +33,25 @@ import (
 	"strings"
 	"time"
 
-	"wodchain/accounts"
-	"wodchain/accounts/keystore"
-	"wodchain/cmd/utils"
-	"wodchain/common"
-	"wodchain/common/hexutil"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/internal/ethapi"
-	"wodchain/internal/flags"
-	"wodchain/log"
-	"wodchain/node"
-	"wodchain/params"
-	"wodchain/rlp"
-	"wodchain/rpc"
-	"wodchain/signer/core"
-	"wodchain/signer/core/apitypes"
-	"wodchain/signer/fourbyte"
-	"wodchain/signer/rules"
-	"wodchain/signer/storage"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/cmd/utils"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/internal/ethapi"
+	"github.com/wodTeam/Wod_Chain/internal/flags"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
+	"github.com/wodTeam/Wod_Chain/rpc"
+	"github.com/wodTeam/Wod_Chain/signer/core"
+	"github.com/wodTeam/Wod_Chain/signer/core/apitypes"
+	"github.com/wodTeam/Wod_Chain/signer/fourbyte"
+	"github.com/wodTeam/Wod_Chain/signer/rules"
+	"github.com/wodTeam/Wod_Chain/signer/storage"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
@@ -76,7 +74,7 @@ PURPOSE. See the GNU General Public License for more details.
 var (
 	logLevelFlag = &cli.IntFlag{
 		Name:  "loglevel",
-		Value: 3,
+		Value: 4,
 		Usage: "log level to emit to the screen",
 	}
 	advancedMode = &cli.BoolFlag{
@@ -100,7 +98,7 @@ var (
 	chainIdFlag = &cli.Int64Flag{
 		Name:  "chainid",
 		Value: params.MainnetChainConfig.ChainID.Int64(),
-		Usage: "Chain id to use for signing (1=mainnet, 5=Goerli)",
+		Usage: "Chain id to use for signing (1=mainnet, 3=Ropsten, 4=Rinkeby, 5=Goerli)",
 	}
 	rpcPortFlag = &cli.IntFlag{
 		Name:     "http.port",
@@ -205,8 +203,9 @@ The delpw command removes a password for a given address (keyfile).
 		},
 		Description: `
 The newaccount command creates a new keystore-backed account. It is a convenience-method
-which can be used in lieu of an external UI.
-`}
+which can be used in lieu of an external UI.`,
+	}
+
 	gendocCommand = &cli.Command{
 		Action: GenDoc,
 		Name:   "gendoc",
@@ -214,52 +213,15 @@ which can be used in lieu of an external UI.
 		Description: `
 The gendoc generates example structures of the json-rpc communication types.
 `}
-	listAccountsCommand = &cli.Command{
-		Action: listAccounts,
-		Name:   "list-accounts",
-		Usage:  "List accounts in the keystore",
-		Flags: []cli.Flag{
-			logLevelFlag,
-			keystoreFlag,
-			utils.LightKDFFlag,
-			acceptFlag,
-		},
-		Description: `
-	Lists the accounts in the keystore.
-	`}
-	listWalletsCommand = &cli.Command{
-		Action: listWallets,
-		Name:   "list-wallets",
-		Usage:  "List wallets known to Clef",
-		Flags: []cli.Flag{
-			logLevelFlag,
-			keystoreFlag,
-			utils.LightKDFFlag,
-			acceptFlag,
-		},
-		Description: `
-	Lists the wallets known to Clef.
-	`}
-	importRawCommand = &cli.Command{
-		Action:    accountImport,
-		Name:      "importraw",
-		Usage:     "Import a hex-encoded private key.",
-		ArgsUsage: "<keyfile>",
-		Flags: []cli.Flag{
-			logLevelFlag,
-			keystoreFlag,
-			utils.LightKDFFlag,
-			acceptFlag,
-		},
-		Description: `
-Imports an unencrypted private key from <keyfile> and creates a new account.
-Prints the address.
-The keyfile is assumed to contain an unencrypted private key in hexadecimal format.
-The account is saved in encrypted format, you are prompted for a password.
-`}
 )
 
-var app = flags.NewApp("Manage Ethereum account operations")
+var (
+	// Git SHA1 commit hash of the release (set via linker flags)
+	gitCommit = ""
+	gitDate   = ""
+
+	app = flags.NewApp(gitCommit, gitDate, "Manage Ethereum account operations")
+)
 
 func init() {
 	app.Name = "Clef"
@@ -292,10 +254,7 @@ func init() {
 		setCredentialCommand,
 		delCredentialCommand,
 		newAccountCommand,
-		importRawCommand,
 		gendocCommand,
-		listAccountsCommand,
-		listWalletsCommand,
 	}
 }
 
@@ -327,7 +286,7 @@ func initializeSecrets(c *cli.Context) error {
 		return err
 	}
 	if num != len(masterSeed) {
-		return errors.New("failed to read enough random")
+		return fmt.Errorf("failed to read enough random")
 	}
 	n, p := keystore.StandardScryptN, keystore.StandardScryptP
 	if c.Bool(utils.LightKDFFlag.Name) {
@@ -398,22 +357,6 @@ func attestFile(ctx *cli.Context) error {
 	return nil
 }
 
-func initInternalApi(c *cli.Context) (*core.UIServerAPI, core.UIClientAPI, error) {
-	if err := initialize(c); err != nil {
-		return nil, nil, err
-	}
-	var (
-		ui                        = core.NewCommandlineUI()
-		pwStorage storage.Storage = &storage.NoStorage{}
-		ksLoc                     = c.String(keystoreFlag.Name)
-		lightKdf                  = c.Bool(utils.LightKDFFlag.Name)
-	)
-	am := core.StartClefAccountManager(ksLoc, true, lightKdf, "")
-	api := core.NewSignerAPI(am, 0, true, ui, nil, false, pwStorage)
-	internalApi := core.NewUIServerAPI(api)
-	return internalApi, ui, nil
-}
-
 func setCredential(ctx *cli.Context) error {
 	if ctx.NArg() < 1 {
 		utils.Fatalf("This command requires an address to be passed as an argument")
@@ -472,6 +415,31 @@ func removeCredential(ctx *cli.Context) error {
 	return nil
 }
 
+func newAccount(c *cli.Context) error {
+	if err := initialize(c); err != nil {
+		return err
+	}
+	// The newaccount is meant for users using the CLI, since 'real' external
+	// UIs can use the UI-api instead. So we'll just use the native CLI UI here.
+	var (
+		ui                        = core.NewCommandlineUI()
+		pwStorage storage.Storage = &storage.NoStorage{}
+		ksLoc                     = c.String(keystoreFlag.Name)
+		lightKdf                  = c.Bool(utils.LightKDFFlag.Name)
+	)
+	log.Info("Starting clef", "keystore", ksLoc, "light-kdf", lightKdf)
+	am := core.StartClefAccountManager(ksLoc, true, lightKdf, "")
+	// This gives is us access to the external API
+	apiImpl := core.NewSignerAPI(am, 0, true, ui, nil, false, pwStorage)
+	// This gives us access to the internal API
+	internalApi := core.NewUIServerAPI(apiImpl)
+	addr, err := internalApi.New(context.Background())
+	if err == nil {
+		fmt.Printf("Generated account %v\n", addr.String())
+	}
+	return err
+}
+
 func initialize(c *cli.Context) error {
 	// Set up the logger to print everything
 	logOutput := os.Stdout
@@ -483,7 +451,7 @@ func initialize(c *cli.Context) error {
 		}
 	} else if !c.Bool(acceptFlag.Name) {
 		if !confirm(legalWarning) {
-			return errors.New("aborted by user")
+			return fmt.Errorf("aborted by user")
 		}
 		fmt.Println()
 	}
@@ -494,108 +462,6 @@ func initialize(c *cli.Context) error {
 	}
 	log.Root().SetHandler(log.LvlFilterHandler(log.Lvl(c.Int(logLevelFlag.Name)), log.StreamHandler(output, log.TerminalFormat(usecolor))))
 
-	return nil
-}
-
-func newAccount(c *cli.Context) error {
-	internalApi, _, err := initInternalApi(c)
-	if err != nil {
-		return err
-	}
-	addr, err := internalApi.New(context.Background())
-	if err == nil {
-		fmt.Printf("Generated account %v\n", addr.String())
-	}
-	return err
-}
-
-func listAccounts(c *cli.Context) error {
-	internalApi, _, err := initInternalApi(c)
-	if err != nil {
-		return err
-	}
-	accs, err := internalApi.ListAccounts(context.Background())
-	if err != nil {
-		return err
-	}
-	if len(accs) == 0 {
-		fmt.Println("\nThe keystore is empty.")
-	}
-	fmt.Println()
-	for _, account := range accs {
-		fmt.Printf("%v (%v)\n", account.Address, account.URL)
-	}
-	return err
-}
-
-func listWallets(c *cli.Context) error {
-	internalApi, _, err := initInternalApi(c)
-	if err != nil {
-		return err
-	}
-	wallets := internalApi.ListWallets()
-	if len(wallets) == 0 {
-		fmt.Println("\nThere are no wallets.")
-	}
-	fmt.Println()
-	for i, wallet := range wallets {
-		fmt.Printf("- Wallet %d at %v (%v %v)\n", i, wallet.URL, wallet.Status, wallet.Failure)
-		for j, acc := range wallet.Accounts {
-			fmt.Printf("  -Account %d: %v (%v)\n", j, acc.Address, acc.URL)
-		}
-		fmt.Println()
-	}
-	return nil
-}
-
-// accountImport imports a raw hexadecimal private key via CLI.
-func accountImport(c *cli.Context) error {
-	if c.Args().Len() != 1 {
-		return errors.New("<keyfile> must be given as first argument.")
-	}
-	internalApi, ui, err := initInternalApi(c)
-	if err != nil {
-		return err
-	}
-	pKey, err := crypto.LoadECDSA(c.Args().First())
-	if err != nil {
-		return err
-	}
-	readPw := func(prompt string) (string, error) {
-		resp, err := ui.OnInputRequired(core.UserInputRequest{
-			Title:      "Password",
-			Prompt:     prompt,
-			IsPassword: true,
-		})
-		if err != nil {
-			return "", err
-		}
-		return resp.Text, nil
-	}
-	first, err := readPw("Please enter a password for the imported account")
-	if err != nil {
-		return err
-	}
-	second, err := readPw("Please repeat the password you just entered")
-	if err != nil {
-		return err
-	}
-	if first != second {
-		return errors.New("Passwords do not match")
-	}
-	acc, err := internalApi.ImportRawKey(hex.EncodeToString(crypto.FromECDSA(pKey)), first)
-	if err != nil {
-		return err
-	}
-	ui.ShowInfo(fmt.Sprintf(`Key imported:
-  Address %v
-  Keystore file: %v
-
-The key is now encrypted; losing the password will result in permanently losing
-access to the key and all associated funds!
-
-Make sure to backup keystore and passwords in a safe location.`,
-		acc.Address, acc.URL.Path))
 	return nil
 }
 
@@ -708,7 +574,6 @@ func signer(c *cli.Context) error {
 	// it with the UI.
 	ui.RegisterUIServer(core.NewUIServerAPI(apiImpl))
 	api = apiImpl
-
 	// Audit logging
 	if logfile := c.String(auditLogFlag.Name); logfile != "" {
 		api, err = core.NewAuditLogger(logfile, api)
@@ -733,7 +598,6 @@ func signer(c *cli.Context) error {
 		cors := utils.SplitAndTrim(c.String(utils.HTTPCORSDomainFlag.Name))
 
 		srv := rpc.NewServer()
-		srv.SetBatchLimits(node.DefaultConfig.BatchRequestLimit, node.DefaultConfig.BatchResponseMaxSize)
 		err := node.RegisterApis(rpcAPI, []string{"account"}, srv)
 		if err != nil {
 			utils.Fatalf("Could not register API: %w", err)
@@ -744,7 +608,7 @@ func signer(c *cli.Context) error {
 		port := c.Int(rpcPortFlag.Name)
 
 		// start http server
-		httpEndpoint := net.JoinHostPort(c.String(utils.HTTPListenAddrFlag.Name), fmt.Sprintf("%d", port))
+		httpEndpoint := fmt.Sprintf("%s:%d", c.String(utils.HTTPListenAddrFlag.Name), port)
 		httpServer, addr, err := node.StartHTTPEndpoint(httpEndpoint, rpc.DefaultHTTPTimeouts, handler)
 		if err != nil {
 			utils.Fatalf("Could not start RPC api: %v", err)
@@ -771,6 +635,7 @@ func signer(c *cli.Context) error {
 			log.Info("IPC endpoint closed", "url", ipcapiURL)
 		}()
 	}
+
 	if c.Bool(testFlag.Name) {
 		log.Info("Performing UI test")
 		go testExternalUI(apiImpl)
@@ -781,7 +646,8 @@ func signer(c *cli.Context) error {
 			"extapi_version": core.ExternalAPIVersion,
 			"extapi_http":    extapiURL,
 			"extapi_ipc":     ipcapiURL,
-		}})
+		},
+	})
 
 	abortChan := make(chan os.Signal, 1)
 	signal.Notify(abortChan, os.Interrupt)
@@ -846,7 +712,7 @@ func readMasterKey(ctx *cli.Context, ui core.UIClientAPI) ([]byte, error) {
 	}
 	masterSeed, err := decryptSeed(cipherKey, password)
 	if err != nil {
-		return nil, errors.New("failed to decrypt the master seed of clef")
+		return nil, fmt.Errorf("failed to decrypt the master seed of clef")
 	}
 	if len(masterSeed) < 256 {
 		return nil, fmt.Errorf("master seed of insufficient length, expected >255 bytes, got %d", len(masterSeed))
@@ -870,7 +736,7 @@ func checkFile(filename string) error {
 	}
 	// Check the unix permission bits
 	// However, on windows, we cannot use the unix perm-bits, see
-	// https://wodchain/issues/20123
+	// https://github.com/wodTeam/Wod_Chain/issues/20123
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0377 != 0 {
 		return fmt.Errorf("file (%v) has insecure file permissions (%v)", filename, info.Mode().String())
 	}

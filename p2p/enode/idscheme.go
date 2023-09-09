@@ -21,25 +21,24 @@ import (
 	"fmt"
 	"io"
 
-	"wodchain/common/math"
-	"wodchain/crypto"
-	"wodchain/p2p/enr"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
-// ValidSchemes is a List of known secure identity schemes.
+// List of known secure identity schemes.
 var ValidSchemes = enr.SchemeMap{
 	"v4": V4ID{},
 }
 
-// ValidSchemesForTesting is a List of identity schemes for testing.
 var ValidSchemesForTesting = enr.SchemeMap{
 	"v4":   V4ID{},
 	"null": NullID{},
 }
 
-// V4ID is the "v4" identity scheme.
+// v4ID is the "v4" identity scheme.
 type V4ID struct{}
 
 // SignV4 signs a record using the v4 scheme.

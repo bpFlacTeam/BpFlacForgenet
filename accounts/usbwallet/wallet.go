@@ -25,12 +25,12 @@ import (
 	"sync"
 	"time"
 
-	"wodchain"
-	"wodchain/accounts"
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/log"
 	"github.com/karalabe/usb"
 )
 
@@ -624,7 +624,7 @@ func (w *wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID
 	return signed, nil
 }
 
-// SignTextWithPassphrase implements accounts.Wallet, however signing arbitrary
+// SignHashWithPassphrase implements accounts.Wallet, however signing arbitrary
 // data is not supported for Ledger wallets, so this method will always return
 // an error.
 func (w *wallet) SignTextWithPassphrase(account accounts.Account, passphrase string, text []byte) ([]byte, error) {

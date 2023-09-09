@@ -19,7 +19,7 @@ package server
 import (
 	"reflect"
 
-	"wodchain/p2p/nodestate"
+	"github.com/wodTeam/Wod_Chain/p2p/nodestate"
 )
 
 type peerWrapper struct{ clientPeer } // the NodeStateMachine type system needs this wrapper

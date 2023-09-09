@@ -17,7 +17,7 @@
 package vm
 
 import (
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 func minSwapStack(n int) int {

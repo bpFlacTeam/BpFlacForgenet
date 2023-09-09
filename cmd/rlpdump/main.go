@@ -28,8 +28,8 @@ import (
 	"os"
 	"strings"
 
-	"wodchain/common"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 var (

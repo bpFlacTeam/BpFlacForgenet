@@ -19,10 +19,10 @@ package rawdb
 import (
 	"bytes"
 
-	"wodchain/core/types"
-	"wodchain/ethdb"
-	"wodchain/log"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // ReadSkeletonSyncStatus retrieves the serialized sync status saved at shutdown.

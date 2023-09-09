@@ -22,7 +22,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"wodchain/rlp/internal/rlpstruct"
+	"github.com/wodTeam/Wod_Chain/rlp/internal/rlpstruct"
 )
 
 // typeinfo is an entry in the type cache.

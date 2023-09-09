@@ -30,20 +30,20 @@ import (
 	"sync"
 	"time"
 
-	"wodchain"
-	"wodchain/common"
-	"wodchain/common/mclock"
-	"wodchain/consensus"
-	"wodchain/core"
-	"wodchain/core/types"
-	ethproto "wodchain/eth/protocols/eth"
-	"wodchain/event"
-	"wodchain/les"
-	"wodchain/log"
-	"wodchain/miner"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/consensus"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	ethproto "github.com/wodTeam/Wod_Chain/eth/protocols/eth"
+	"github.com/wodTeam/Wod_Chain/event"
+	"github.com/wodTeam/Wod_Chain/les"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/miner"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/rpc"
 	"github.com/gorilla/websocket"
 )
 
@@ -57,8 +57,6 @@ const (
 	txChanSize = 4096
 	// chainHeadChanSize is the size of channel listening to ChainHeadEvent.
 	chainHeadChanSize = 10
-
-	messageSizeLimit = 15 * 1024 * 1024
 )
 
 // backend encompasses the bare-minimum functionality needed for ethstats reporting
@@ -104,17 +102,13 @@ type Service struct {
 // websocket.
 //
 // From Gorilla websocket docs:
-//
-// Connections support one concurrent reader and one concurrent writer. Applications are
-// responsible for ensuring that
-//   - no more than one goroutine calls the write methods
-//     NextWriter, SetWriteDeadline, WriteMessage, WriteJSON, EnableWriteCompression,
-//     SetCompressionLevel concurrently; and
-//   - that no more than one goroutine calls the
-//     read methods NextReader, SetReadDeadline, ReadMessage, ReadJSON, SetPongHandler,
-//     SetPingHandler concurrently.
-//
-// The Close and WriteControl methods can be called concurrently with all other methods.
+//   Connections support one concurrent reader and one concurrent writer.
+//   Applications are responsible for ensuring that no more than one goroutine calls the write methods
+//     - NextWriter, SetWriteDeadline, WriteMessage, WriteJSON, EnableWriteCompression, SetCompressionLevel
+//   concurrently and that no more than one goroutine calls the read methods
+//     - NextReader, SetReadDeadline, ReadMessage, ReadJSON, SetPongHandler, SetPingHandler
+//   concurrently.
+//   The Close and WriteControl methods can be called concurrently with all other methods.
 type connWrapper struct {
 	conn *websocket.Conn
 
@@ -123,7 +117,6 @@ type connWrapper struct {
 }
 
 func newConnectionWrapper(conn *websocket.Conn) *connWrapper {
-	conn.SetReadLimit(messageSizeLimit)
 	return &connWrapper{conn: conn}
 }
 

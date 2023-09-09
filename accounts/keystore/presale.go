@@ -25,8 +25,8 @@ import (
 	"errors"
 	"fmt"
 
-	"wodchain/accounts"
-	"wodchain/crypto"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/crypto"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 )

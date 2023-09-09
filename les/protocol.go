@@ -23,12 +23,12 @@ import (
 	"io"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	vfc "wodchain/les/vflux/client"
-	"wodchain/p2p/enode"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	vfc "github.com/wodTeam/Wod_Chain/les/vflux/client"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // Constants to match up protocol versions and messages
@@ -40,11 +40,12 @@ const (
 
 // Supported versions of the les protocol (first is primary)
 var (
-	ClientProtocolVersions = []uint{lpv2, lpv3, lpv4}
-	ServerProtocolVersions = []uint{lpv2, lpv3, lpv4}
+	ClientProtocolVersions    = []uint{lpv2, lpv3, lpv4}
+	ServerProtocolVersions    = []uint{lpv2, lpv3, lpv4}
+	AdvertiseProtocolVersions = []uint{lpv2} // clients are searching for the first advertised protocol in the list
 )
 
-// ProtocolLengths is the number of implemented message corresponding to different protocol versions.
+// Number of implemented message corresponding to different protocol versions.
 var ProtocolLengths = map[uint]uint64{lpv2: 22, lpv3: 24, lpv4: 24}
 
 const (

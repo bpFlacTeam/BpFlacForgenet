@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"wodchain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
 )
 
 // logger collects events in string format and discards events older than the

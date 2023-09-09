@@ -18,17 +18,16 @@ package rules
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/dop251/goja"
-	"wodchain/internal/ethapi"
-	"wodchain/internal/jsre/deps"
-	"wodchain/log"
-	"wodchain/signer/core"
-	"wodchain/signer/storage"
+	"github.com/wodTeam/Wod_Chain/internal/ethapi"
+	"github.com/wodTeam/Wod_Chain/internal/jsre/deps"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/signer/core"
+	"github.com/wodTeam/Wod_Chain/signer/storage"
 )
 
 // consoleOutput is an override for the console.log and console.error methods to
@@ -147,7 +146,7 @@ func (r *rulesetUI) checkApproval(jsfunc string, jsarg []byte, err error) (bool,
 		log.Info("Op rejected")
 		return false, nil
 	}
-	return false, errors.New("unknown response")
+	return false, fmt.Errorf("unknown response")
 }
 
 func (r *rulesetUI) ApproveTx(request *core.SignTxRequest) (core.SignTxResponse, error) {

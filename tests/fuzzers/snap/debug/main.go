@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"wodchain/tests/fuzzers/snap"
+	"github.com/wodTeam/Wod_Chain/tests/fuzzers/snap"
 )
 
 func main() {

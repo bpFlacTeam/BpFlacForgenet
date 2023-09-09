@@ -17,8 +17,8 @@
 package snapshot
 
 import (
-	"wodchain/common"
-	"wodchain/ethdb"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/ethdb"
 )
 
 // holdableIterator is a wrapper of underlying database iterator. It extends

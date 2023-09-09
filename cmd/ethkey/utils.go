@@ -22,7 +22,7 @@ import (
 	"os"
 	"strings"
 
-	"wodchain/cmd/utils"
+	"github.com/wodTeam/Wod_Chain/cmd/utils"
 	"github.com/urfave/cli/v2"
 )
 

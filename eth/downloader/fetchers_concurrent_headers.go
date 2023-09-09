@@ -19,9 +19,9 @@ package downloader
 import (
 	"time"
 
-	"wodchain/common"
-	"wodchain/eth/protocols/eth"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/eth"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // headerQueue implements typedQueue and is a type adapter between the generic

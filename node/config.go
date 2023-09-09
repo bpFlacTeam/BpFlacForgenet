@@ -19,17 +19,18 @@ package node
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
-	"wodchain/common"
-	"wodchain/crypto"
-	"wodchain/log"
-	"wodchain/p2p"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/rpc"
 )
 
 const (
@@ -76,7 +77,7 @@ type Config struct {
 	// is created by New and destroyed when the node is stopped.
 	KeyStoreDir string `toml:",omitempty"`
 
-	// ExternalSigner specifies an external URI for a clef-type signer.
+	// ExternalSigner specifies an external URI for a clef-type signer
 	ExternalSigner string `toml:",omitempty"`
 
 	// UseLightweightKDF lowers the memory and CPU requirements of the key store
@@ -93,7 +94,7 @@ type Config struct {
 	// USB enables hardware wallet monitoring and connectivity.
 	USB bool `toml:",omitempty"`
 
-	// SmartCardDaemonPath is the path to the smartcard daemon's socket.
+	// SmartCardDaemonPath is the path to the smartcard daemon's socket
 	SmartCardDaemonPath string `toml:",omitempty"`
 
 	// IPCPath is the requested location to place the IPC endpoint. If the path is
@@ -193,24 +194,15 @@ type Config struct {
 	// Logger is a custom logger to use with the p2p.Server.
 	Logger log.Logger `toml:",omitempty"`
 
+	staticNodesWarning     bool
+	trustedNodesWarning    bool
 	oldGethResourceWarning bool
 
 	// AllowUnprotectedTxs allows non EIP-155 protected transactions to be send over RPC.
 	AllowUnprotectedTxs bool `toml:",omitempty"`
 
-	// BatchRequestLimit is the maximum number of requests in a batch.
-	BatchRequestLimit int `toml:",omitempty"`
-
-	// BatchResponseMaxSize is the maximum number of bytes returned from a batched rpc call.
-	BatchResponseMaxSize int `toml:",omitempty"`
-
-	// JWTSecret is the path to the hex-encoded jwt secret.
+	// JWTSecret is the hex-encoded jwt secret.
 	JWTSecret string `toml:",omitempty"`
-
-	// EnablePersonal enables the deprecated personal namespace.
-	EnablePersonal bool `toml:"-"`
-
-	DBEngine string `toml:",omitempty"`
 }
 
 // IPCEndpoint resolves an IPC endpoint based on a configured value, taking into
@@ -264,7 +256,7 @@ func (c *Config) HTTPEndpoint() string {
 	if c.HTTPHost == "" {
 		return ""
 	}
-	return net.JoinHostPort(c.HTTPHost, fmt.Sprintf("%d", c.HTTPPort))
+	return fmt.Sprintf("%s:%d", c.HTTPHost, c.HTTPPort)
 }
 
 // DefaultHTTPEndpoint returns the HTTP endpoint used by default.
@@ -279,7 +271,7 @@ func (c *Config) WSEndpoint() string {
 	if c.WSHost == "" {
 		return ""
 	}
-	return net.JoinHostPort(c.WSHost, fmt.Sprintf("%d", c.WSPort))
+	return fmt.Sprintf("%s:%d", c.WSHost, c.WSPort)
 }
 
 // DefaultWSEndpoint returns the websocket endpoint used by default.
@@ -348,9 +340,8 @@ func (c *Config) ResolvePath(path string) string {
 			oldpath = filepath.Join(c.DataDir, path)
 		}
 		if oldpath != "" && common.FileExist(oldpath) {
-			if warn && !c.oldGethResourceWarning {
-				c.oldGethResourceWarning = true
-				log.Warn("Using deprecated resource file, please move this file to the 'geth' subdirectory of datadir.", "file", oldpath)
+			if warn {
+				c.warnOnce(&c.oldGethResourceWarning, "Using deprecated resource file %s, please move this file to the 'geth' subdirectory of datadir.", oldpath)
 			}
 			return oldpath
 		}
@@ -403,35 +394,48 @@ func (c *Config) NodeKey() *ecdsa.PrivateKey {
 	return key
 }
 
-// checkLegacyFiles inspects the datadir for signs of legacy static-nodes
-// and trusted-nodes files. If they exist it raises an error.
-func (c *Config) checkLegacyFiles() {
-	c.checkLegacyFile(c.ResolvePath(datadirStaticNodes))
-	c.checkLegacyFile(c.ResolvePath(datadirTrustedNodes))
+// StaticNodes returns a list of node enode URLs configured as static nodes.
+func (c *Config) StaticNodes() []*enode.Node {
+	return c.parsePersistentNodes(&c.staticNodesWarning, c.ResolvePath(datadirStaticNodes))
 }
 
-// checkLegacyFile will only raise an error if a file at the given path exists.
-func (c *Config) checkLegacyFile(path string) {
+// TrustedNodes returns a list of node enode URLs configured as trusted nodes.
+func (c *Config) TrustedNodes() []*enode.Node {
+	return c.parsePersistentNodes(&c.trustedNodesWarning, c.ResolvePath(datadirTrustedNodes))
+}
+
+// parsePersistentNodes parses a list of discovery node URLs loaded from a .json
+// file from within the data directory.
+func (c *Config) parsePersistentNodes(w *bool, path string) []*enode.Node {
 	// Short circuit if no node config is present
 	if c.DataDir == "" {
-		return
+		return nil
 	}
 	if _, err := os.Stat(path); err != nil {
-		return
+		return nil
 	}
-	logger := c.Logger
-	if logger == nil {
-		logger = log.Root()
+	c.warnOnce(w, "Found deprecated node list file %s, please use the TOML config file instead.", path)
+
+	// Load the nodes from the config file.
+	var nodelist []string
+	if err := common.LoadJSON(path, &nodelist); err != nil {
+		log.Error(fmt.Sprintf("Can't load node list file: %v", err))
+		return nil
 	}
-	switch fname := filepath.Base(path); fname {
-	case "static-nodes.json":
-		logger.Error("The static-nodes.json file is deprecated and ignored. Use P2P.StaticNodes in config.toml instead.")
-	case "trusted-nodes.json":
-		logger.Error("The trusted-nodes.json file is deprecated and ignored. Use P2P.TrustedNodes in config.toml instead.")
-	default:
-		// We shouldn't wind up here, but better print something just in case.
-		logger.Error("Ignoring deprecated file.", "file", path)
+	// Interpret the list as a discovery node array
+	var nodes []*enode.Node
+	for _, url := range nodelist {
+		if url == "" {
+			continue
+		}
+		node, err := enode.Parse(enode.ValidSchemes, url)
+		if err != nil {
+			log.Error(fmt.Sprintf("Node URL %s: %v\n", url, err))
+			continue
+		}
+		nodes = append(nodes, node)
 	}
+	return nodes
 }
 
 // KeyDirConfig determines the settings for keydirectory
@@ -455,10 +459,10 @@ func (c *Config) KeyDirConfig() (string, error) {
 	return keydir, err
 }
 
-// GetKeyStoreDir retrieves the key directory and will create
+// getKeyStoreDir retrieves the key directory and will create
 // and ephemeral one if necessary.
-func (c *Config) GetKeyStoreDir() (string, bool, error) {
-	keydir, err := c.KeyDirConfig()
+func getKeyStoreDir(conf *Config) (string, bool, error) {
+	keydir, err := conf.KeyDirConfig()
 	if err != nil {
 		return "", false, err
 	}
@@ -477,4 +481,21 @@ func (c *Config) GetKeyStoreDir() (string, bool, error) {
 	}
 
 	return keydir, isEphemeral, nil
+}
+
+var warnLock sync.Mutex
+
+func (c *Config) warnOnce(w *bool, format string, args ...interface{}) {
+	warnLock.Lock()
+	defer warnLock.Unlock()
+
+	if *w {
+		return
+	}
+	l := c.Logger
+	if l == nil {
+		l = log.Root()
+	}
+	l.Warn(fmt.Sprintf(format, args...))
+	*w = true
 }

@@ -19,9 +19,9 @@ package client
 import (
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/les/utils"
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 )
 
 // PrivateClientAPI implements the vflux client side API

@@ -33,12 +33,12 @@ import (
 	"sync"
 	"time"
 
-	"wodchain"
-	"wodchain/accounts"
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/accounts"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/log"
 	pcsc "github.com/gballet/go-libpcsclite"
 	"github.com/status-im/keycard-go/derivationpath"
 )
@@ -99,8 +99,8 @@ const (
 	P1DeriveKeyFromCurrent = uint8(0x10)
 	statusP1WalletStatus   = uint8(0x00)
 	statusP1Path           = uint8(0x01)
-	signP1PrecomputedHash  = uint8(0x00)
-	signP2OnlyBlock        = uint8(0x00)
+	signP1PrecomputedHash  = uint8(0x01)
+	signP2OnlyBlock        = uint8(0x81)
 	exportP1Any            = uint8(0x00)
 	exportP2Pubkey         = uint8(0x01)
 )
@@ -252,7 +252,7 @@ func (w *Wallet) release() error {
 // with the wallet.
 func (w *Wallet) pair(puk []byte) error {
 	if w.session.paired() {
-		return errors.New("wallet already paired")
+		return fmt.Errorf("wallet already paired")
 	}
 	pairing, err := w.session.pair(puk)
 	if err != nil {
@@ -813,7 +813,7 @@ func (s *Session) pair(secret []byte) (smartcardPairing, error) {
 // unpair deletes an existing pairing.
 func (s *Session) unpair() error {
 	if !s.verified {
-		return errors.New("unpair requires that the PIN be verified")
+		return fmt.Errorf("unpair requires that the PIN be verified")
 	}
 	return s.Channel.Unpair()
 }
@@ -879,7 +879,6 @@ func (s *Session) walletStatus() (*walletStatus, error) {
 }
 
 // derivationPath fetches the wallet's current derivation path from the card.
-//
 //lint:ignore U1000 needs to be added to the console interface
 func (s *Session) derivationPath() (accounts.DerivationPath, error) {
 	response, err := s.Channel.transmitEncrypted(claSCWallet, insStatus, statusP1Path, 0, nil)
@@ -907,7 +906,7 @@ func (s *Session) initialize(seed []byte) error {
 		return err
 	}
 	if status == "Online" {
-		return errors.New("card is already initialized, cowardly refusing to proceed")
+		return fmt.Errorf("card is already initialized, cowardly refusing to proceed")
 	}
 
 	s.Wallet.lock.Lock()
@@ -995,7 +994,6 @@ func (s *Session) derive(path accounts.DerivationPath) (accounts.Account, error)
 }
 
 // keyExport contains information on an exported keypair.
-//
 //lint:ignore U1000 needs to be added to the console interface
 type keyExport struct {
 	PublicKey  []byte `asn1:"tag:0"`
@@ -1003,7 +1001,6 @@ type keyExport struct {
 }
 
 // publicKey returns the public key for the current derivation path.
-//
 //lint:ignore U1000 needs to be added to the console interface
 func (s *Session) publicKey() ([]byte, error) {
 	response, err := s.Channel.transmitEncrypted(claSCWallet, insExportKey, exportP1Any, exportP2Pubkey, nil)

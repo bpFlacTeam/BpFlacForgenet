@@ -27,19 +27,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/mclock"
-	"wodchain/core"
-	"wodchain/core/forkid"
-	"wodchain/core/types"
-	"wodchain/les/flowcontrol"
-	"wodchain/les/utils"
-	vfc "wodchain/les/vflux/client"
-	vfs "wodchain/les/vflux/server"
-	"wodchain/light"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/core/forkid"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/les/flowcontrol"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	vfc "github.com/wodTeam/Wod_Chain/les/vflux/client"
+	vfs "github.com/wodTeam/Wod_Chain/les/vflux/server"
+	"github.com/wodTeam/Wod_Chain/light"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 var (
@@ -121,13 +122,13 @@ type peerCommons struct {
 	*p2p.Peer
 	rw p2p.MsgReadWriter
 
-	id           string      // Peer identity.
-	version      int         // Protocol version negotiated.
-	network      uint64      // Network ID being on.
-	frozen       atomic.Bool // Flag whether the peer is frozen.
-	announceType uint64      // New block announcement type.
-	serving      atomic.Bool // The status indicates the peer is served.
-	headInfo     blockInfo   // Last announced block information.
+	id           string    // Peer identity.
+	version      int       // Protocol version negotiated.
+	network      uint64    // Network ID being on.
+	frozen       uint32    // Flag whether the peer is frozen.
+	announceType uint64    // New block announcement type.
+	serving      uint32    // The status indicates the peer is served.
+	headInfo     blockInfo // Last announced block information.
 
 	// Background task queue for caching peer tasks and executing in order.
 	sendQueue *utils.ExecQueue
@@ -143,7 +144,7 @@ type peerCommons struct {
 // isFrozen returns true if the client is frozen or the server has put our
 // client in frozen state
 func (p *peerCommons) isFrozen() bool {
-	return p.frozen.Load()
+	return atomic.LoadUint32(&p.frozen) != 0
 }
 
 // canQueue returns an indicator whether the peer can queue an operation.
@@ -344,6 +345,10 @@ type serverPeer struct {
 	stateSince, stateRecent uint64 // The range of state server peer can serve.
 	txHistory               uint64 // The length of available tx history, 0 means all, 1 means disabled
 
+	// Advertised checkpoint fields
+	checkpointNumber uint64                   // The block height which the checkpoint is registered.
+	checkpoint       params.TrustedCheckpoint // The advertised checkpoint sent by server.
+
 	fcServer         *flowcontrol.ServerNode // Client side mirror token bucket.
 	vtLock           sync.Mutex
 	nodeValueTracker *vfc.NodeValueTracker
@@ -398,7 +403,7 @@ func (p *serverPeer) rejectUpdate(size uint64) bool {
 // freeze processes Stop messages from the given server and set the status as
 // frozen.
 func (p *serverPeer) freeze() {
-	if p.frozen.CompareAndSwap(false, true) {
+	if atomic.CompareAndSwapUint32(&p.frozen, 0, 1) {
 		p.sendQueue.Clear()
 	}
 }
@@ -406,7 +411,7 @@ func (p *serverPeer) freeze() {
 // unfreeze processes Resume messages from the given server and set the status
 // as unfrozen.
 func (p *serverPeer) unfreeze() {
-	p.frozen.Store(false)
+	atomic.StoreUint32(&p.frozen, 0)
 }
 
 // sendRequest send a request to the server based on the given message type
@@ -656,6 +661,9 @@ func (p *serverPeer) Handshake(genesis common.Hash, forkid forkid.ID, forkFilter
 		p.fcServer = flowcontrol.NewServerNode(sParams, &mclock.System{})
 		p.fcCosts = MRC.decode(ProtocolLengths[uint(p.version)])
 
+		recv.get("checkpoint/value", &p.checkpoint)
+		recv.get("checkpoint/registerHeight", &p.checkpointNumber)
+
 		if !p.onlyAnnounce {
 			for msgCode := range reqAvgTimeCost {
 				if p.fcCosts[msgCode] == nil {
@@ -823,11 +831,11 @@ func (p *clientPeer) freeze() {
 	if p.version < lpv3 {
 		// if Stop/Resume is not supported then just drop the peer after setting
 		// its frozen status permanently
-		p.frozen.Store(true)
+		atomic.StoreUint32(&p.frozen, 1)
 		p.Peer.Disconnect(p2p.DiscUselessPeer)
 		return
 	}
-	if !p.frozen.Swap(true) {
+	if atomic.SwapUint32(&p.frozen, 1) == 0 {
 		go func() {
 			p.sendStop()
 			time.Sleep(freezeTimeBase + time.Duration(rand.Int63n(int64(freezeTimeRandom))))
@@ -840,7 +848,7 @@ func (p *clientPeer) freeze() {
 					time.Sleep(freezeCheckPeriod)
 					continue
 				}
-				p.frozen.Store(false)
+				atomic.StoreUint32(&p.frozen, 0)
 				p.sendResume(bufValue)
 				return
 			}
@@ -998,6 +1006,9 @@ func (p *clientPeer) Handshake(td *big.Int, head common.Hash, headNum uint64, ge
 			recentTx -= blockSafetyMargin - txIndexRecentOffset
 		}
 	}
+	if server.config.UltraLightOnlyAnnounce {
+		recentTx = txIndexDisabled
+	}
 	if recentTx != txIndexUnlimited && p.version < lpv4 {
 		return errors.New("Cannot serve old clients without a complete tx index")
 	}
@@ -1006,18 +1017,20 @@ func (p *clientPeer) Handshake(td *big.Int, head common.Hash, headNum uint64, ge
 	p.headInfo = blockInfo{Hash: head, Number: headNum, Td: td}
 	return p.handshake(td, head, headNum, genesis, forkID, forkFilter, func(lists *keyValueList) {
 		// Add some information which services server can offer.
-		*lists = (*lists).add("serveHeaders", nil)
-		*lists = (*lists).add("serveChainSince", uint64(0))
-		*lists = (*lists).add("serveStateSince", uint64(0))
+		if !server.config.UltraLightOnlyAnnounce {
+			*lists = (*lists).add("serveHeaders", nil)
+			*lists = (*lists).add("serveChainSince", uint64(0))
+			*lists = (*lists).add("serveStateSince", uint64(0))
 
-		// If local ethereum node is running in archive mode, advertise ourselves we have
-		// all version state data. Otherwise only recent state is available.
-		stateRecent := uint64(core.TriesInMemory - blockSafetyMargin)
-		if server.archiveMode {
-			stateRecent = 0
+			// If local ethereum node is running in archive mode, advertise ourselves we have
+			// all version state data. Otherwise only recent state is available.
+			stateRecent := uint64(core.TriesInMemory - blockSafetyMargin)
+			if server.archiveMode {
+				stateRecent = 0
+			}
+			*lists = (*lists).add("serveRecentState", stateRecent)
+			*lists = (*lists).add("txRelay", nil)
 		}
-		*lists = (*lists).add("serveRecentState", stateRecent)
-		*lists = (*lists).add("txRelay", nil)
 		if p.version >= lpv4 {
 			*lists = (*lists).add("recentTxLookup", recentTx)
 		}
@@ -1033,6 +1046,16 @@ func (p *clientPeer) Handshake(td *big.Int, head common.Hash, headNum uint64, ge
 		*lists = (*lists).add("flowControl/MRC", costList)
 		p.fcCosts = costList.decode(ProtocolLengths[uint(p.version)])
 		p.fcParams = server.defParams
+
+		// Add advertised checkpoint and register block height which
+		// client can verify the checkpoint validity.
+		if server.oracle != nil && server.oracle.IsRunning() {
+			cp, height := server.oracle.StableCheckpoint()
+			if cp != nil {
+				*lists = (*lists).add("checkpoint/value", cp)
+				*lists = (*lists).add("checkpoint/registerHeight", height)
+			}
+		}
 	}, func(recv keyValueMap) error {
 		p.server = recv.get("flowControl/MRR", nil) == nil
 		if p.server {

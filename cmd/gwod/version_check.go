@@ -26,7 +26,7 @@ import (
 	"regexp"
 	"strings"
 
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/log"
 	"github.com/jedisct1/go-minisign"
 	"github.com/urfave/cli/v2"
 )

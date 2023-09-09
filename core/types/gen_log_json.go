@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"wodchain/common"
-	"wodchain/common/hexutil"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/hexutil"
 )
 
 var _ = (*logMarshaling)(nil)

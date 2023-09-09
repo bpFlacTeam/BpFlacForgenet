@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/rlp"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
@@ -494,7 +494,7 @@ func nextNode(it iterator.Iterator) *Node {
 	return nil
 }
 
-// Close flushes and closes the database files.
+// close flushes and closes the database files.
 func (db *DB) Close() {
 	close(db.quit)
 	db.lvl.Close()

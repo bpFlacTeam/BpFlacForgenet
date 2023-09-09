@@ -7,8 +7,8 @@ import (
 	"errors"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/common/math"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/math"
 )
 
 var _ = (*stEnvMarshaling)(nil)

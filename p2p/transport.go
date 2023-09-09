@@ -25,11 +25,11 @@ import (
 	"sync"
 	"time"
 
-	"wodchain/common"
-	"wodchain/common/bitutil"
-	"wodchain/metrics"
-	"wodchain/p2p/rlpx"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/bitutil"
+	"github.com/wodTeam/Wod_Chain/metrics"
+	"github.com/wodTeam/Wod_Chain/p2p/rlpx"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 const (

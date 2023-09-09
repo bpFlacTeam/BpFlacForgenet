@@ -19,8 +19,8 @@ package les
 import (
 	"time"
 
-	"wodchain/common/bitutil"
-	"wodchain/light"
+	"github.com/wodTeam/Wod_Chain/common/bitutil"
+	"github.com/wodTeam/Wod_Chain/light"
 )
 
 const (

@@ -22,8 +22,8 @@ import (
 	"errors"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
 )
 
 // NotFound is returned by API methods if the requested item does not exist.

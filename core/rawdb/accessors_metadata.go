@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"wodchain/common"
-	"wodchain/ethdb"
-	"wodchain/log"
-	"wodchain/params"
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/params"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.
@@ -82,15 +82,15 @@ func WriteChainConfig(db ethdb.KeyValueWriter, hash common.Hash, cfg *params.Cha
 }
 
 // ReadGenesisStateSpec retrieves the genesis state specification based on the
-// given genesis (block-)hash.
-func ReadGenesisStateSpec(db ethdb.KeyValueReader, blockhash common.Hash) []byte {
-	data, _ := db.Get(genesisStateSpecKey(blockhash))
+// given genesis hash.
+func ReadGenesisStateSpec(db ethdb.KeyValueReader, hash common.Hash) []byte {
+	data, _ := db.Get(genesisStateSpecKey(hash))
 	return data
 }
 
 // WriteGenesisStateSpec writes the genesis state specification into the disk.
-func WriteGenesisStateSpec(db ethdb.KeyValueWriter, blockhash common.Hash, data []byte) {
-	if err := db.Put(genesisStateSpecKey(blockhash), data); err != nil {
+func WriteGenesisStateSpec(db ethdb.KeyValueWriter, hash common.Hash, data []byte) {
+	if err := db.Put(genesisStateSpecKey(hash), data); err != nil {
 		log.Crit("Failed to store genesis state", "err", err)
 	}
 }

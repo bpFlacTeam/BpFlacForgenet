@@ -24,19 +24,12 @@ import (
 	"strings"
 	"sync"
 
-	"wodchain"
-	"wodchain/accounts/abi"
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/crypto"
-	"wodchain/event"
-)
-
-const basefeeWiggleMultiplier = 2
-
-var (
-	errNoEventSignature       = errors.New("no event signature")
-	errEventSignatureMismatch = errors.New("event signature mismatch")
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/accounts/abi"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/event"
 )
 
 // SignerFn is a signer function callback when a contract requires a method to
@@ -261,7 +254,7 @@ func (c *BoundContract) createDynamicTx(opts *TransactOpts, contract *common.Add
 	if gasFeeCap == nil {
 		gasFeeCap = new(big.Int).Add(
 			gasTipCap,
-			new(big.Int).Mul(head.BaseFee, big.NewInt(basefeeWiggleMultiplier)),
+			new(big.Int).Mul(head.BaseFee, big.NewInt(2)),
 		)
 	}
 	if gasFeeCap.Cmp(gasTipCap) < 0 {
@@ -378,8 +371,6 @@ func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, i
 	)
 	if opts.GasPrice != nil {
 		rawTx, err = c.createLegacyTx(opts, contract, input)
-	} else if opts.GasFeeCap != nil && opts.GasTipCap != nil {
-		rawTx, err = c.createDynamicTx(opts, contract, input, nil)
 	} else {
 		// Only query for basefee if gasPrice not specified
 		if head, errHead := c.transactor.HeaderByNumber(ensureContext(opts.Context), nil); errHead != nil {
@@ -493,12 +484,8 @@ func (c *BoundContract) WatchLogs(opts *WatchOpts, name string, query ...[]inter
 
 // UnpackLog unpacks a retrieved log into the provided output structure.
 func (c *BoundContract) UnpackLog(out interface{}, event string, log types.Log) error {
-	// Anonymous events are not supported.
-	if len(log.Topics) == 0 {
-		return errNoEventSignature
-	}
 	if log.Topics[0] != c.abi.Events[event].ID {
-		return errEventSignatureMismatch
+		return fmt.Errorf("event signature mismatch")
 	}
 	if len(log.Data) > 0 {
 		if err := c.abi.UnpackIntoInterface(out, event, log.Data); err != nil {
@@ -516,12 +503,8 @@ func (c *BoundContract) UnpackLog(out interface{}, event string, log types.Log) 
 
 // UnpackLogIntoMap unpacks a retrieved log into the provided map.
 func (c *BoundContract) UnpackLogIntoMap(out map[string]interface{}, event string, log types.Log) error {
-	// Anonymous events are not supported.
-	if len(log.Topics) == 0 {
-		return errNoEventSignature
-	}
 	if log.Topics[0] != c.abi.Events[event].ID {
-		return errEventSignatureMismatch
+		return fmt.Errorf("event signature mismatch")
 	}
 	if len(log.Data) > 0 {
 		if err := c.abi.UnpackIntoMap(out, event, log.Data); err != nil {

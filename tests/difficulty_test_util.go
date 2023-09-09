@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"wodchain/common"
-	"wodchain/common/math"
-	"wodchain/consensus/ethash"
-	"wodchain/core/types"
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/consensus/ethash"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 //go:generate go run github.com/fjl/gencodec -type DifficultyTest -field-override difficultyTestMarshaling -out gen_difficultytest.go

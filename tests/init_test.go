@@ -18,7 +18,6 @@ package tests
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -30,7 +29,7 @@ import (
 	"strings"
 	"testing"
 
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 var (
@@ -117,7 +116,6 @@ func (tm *testMatcher) skipLoad(pattern string) {
 }
 
 // fails adds an expected failure for tests matching the pattern.
-//
 //nolint:unused
 func (tm *testMatcher) fails(pattern string, reason string) {
 	if reason == "" {
@@ -181,7 +179,7 @@ func (tm *testMatcher) checkFailure(t *testing.T, err error) error {
 			t.Logf("error: %v", err)
 			return nil
 		}
-		return errors.New("test succeeded unexpectedly")
+		return fmt.Errorf("test succeeded unexpectedly")
 	}
 	return err
 }

@@ -19,7 +19,7 @@ package ethash
 import (
 	"math/big"
 
-	"wodchain/core/types"
+	"github.com/wodTeam/Wod_Chain/core/types"
 	"github.com/holiman/uint256"
 )
 

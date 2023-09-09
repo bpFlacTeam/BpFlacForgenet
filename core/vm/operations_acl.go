@@ -19,9 +19,9 @@ package vm
 import (
 	"errors"
 
-	"wodchain/common"
-	"wodchain/common/math"
-	"wodchain/params"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/math"
+	"github.com/wodTeam/Wod_Chain/params"
 )
 
 func makeGasSStoreFunc(clearingRefund uint64) gasFunc {
@@ -235,7 +235,7 @@ func makeSelfdestructGasFn(refundsEnabled bool) gasFunc {
 		if evm.StateDB.Empty(address) && evm.StateDB.GetBalance(contract.Address()).Sign() != 0 {
 			gas += params.CreateBySelfdestructGas
 		}
-		if refundsEnabled && !evm.StateDB.HasSelfDestructed(contract.Address()) {
+		if refundsEnabled && !evm.StateDB.HasSuicided(contract.Address()) {
 			evm.StateDB.AddRefund(params.SelfdestructRefundGas)
 		}
 		return gas, nil

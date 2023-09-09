@@ -1,6 +1,6 @@
 package test
 
-import "wodchain/rlp"
+import "github.com/wodTeam/Wod_Chain/rlp"
 import "io"
 
 func (obj *Test) EncodeRLP(_w io.Writer) error {

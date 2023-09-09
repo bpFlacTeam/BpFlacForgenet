@@ -19,8 +19,8 @@ package client
 import (
 	"sync"
 
-	"wodchain/p2p/enode"
-	"wodchain/p2p/nodestate"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/nodestate"
 )
 
 // QueueIterator returns nodes from the specified selectable set in the same order as

@@ -22,8 +22,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"wodchain/common"
-	"wodchain/common/math"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/common/math"
 )
 
 // packBytesSlice packs the given bytes as [L, V] as the canonical representation

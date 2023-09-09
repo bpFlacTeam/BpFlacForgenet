@@ -17,7 +17,7 @@
 package trie
 
 import (
-	"wodchain/rlp"
+	"github.com/wodTeam/Wod_Chain/rlp"
 )
 
 func nodeToBytes(n node) []byte {
@@ -57,6 +57,29 @@ func (n hashNode) encode(w rlp.EncoderBuffer) {
 
 func (n valueNode) encode(w rlp.EncoderBuffer) {
 	w.WriteBytes(n)
+}
+
+func (n rawFullNode) encode(w rlp.EncoderBuffer) {
+	offset := w.List()
+	for _, c := range n {
+		if c != nil {
+			c.encode(w)
+		} else {
+			w.Write(rlp.EmptyString)
+		}
+	}
+	w.ListEnd(offset)
+}
+
+func (n *rawShortNode) encode(w rlp.EncoderBuffer) {
+	offset := w.List()
+	w.WriteBytes(n.Key)
+	if n.Val != nil {
+		n.Val.encode(w)
+	} else {
+		w.Write(rlp.EmptyString)
+	}
+	w.ListEnd(offset)
 }
 
 func (n rawNode) encode(w rlp.EncoderBuffer) {

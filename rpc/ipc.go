@@ -20,8 +20,8 @@ import (
 	"context"
 	"net"
 
-	"wodchain/log"
-	"wodchain/p2p/netutil"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/p2p/netutil"
 )
 
 // ServeListener accepts connections on l, serving JSON-RPC on them.
@@ -46,16 +46,11 @@ func (s *Server) ServeListener(l net.Listener) error {
 // The context is used for the initial connection establishment. It does not
 // affect subsequent interactions with the client.
 func DialIPC(ctx context.Context, endpoint string) (*Client, error) {
-	cfg := new(clientConfig)
-	return newClient(ctx, cfg, newClientTransportIPC(endpoint))
-}
-
-func newClientTransportIPC(endpoint string) reconnectFunc {
-	return func(ctx context.Context) (ServerCodec, error) {
+	return newClient(ctx, func(ctx context.Context) (ServerCodec, error) {
 		conn, err := newIPCConnection(ctx, endpoint)
 		if err != nil {
 			return nil, err
 		}
 		return NewCodec(conn), err
-	}
+	})
 }

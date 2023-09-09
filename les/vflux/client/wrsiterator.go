@@ -19,9 +19,9 @@ package client
 import (
 	"sync"
 
-	"wodchain/les/utils"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/nodestate"
+	"github.com/wodTeam/Wod_Chain/les/utils"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/nodestate"
 )
 
 // WrsIterator returns nodes from the specified selectable set with a weighted random

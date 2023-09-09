@@ -19,8 +19,8 @@ package eth
 import (
 	"time"
 
-	"wodchain/common/bitutil"
-	"wodchain/core/rawdb"
+	"github.com/wodTeam/Wod_Chain/common/bitutil"
+	"github.com/wodTeam/Wod_Chain/core/rawdb"
 )
 
 const (

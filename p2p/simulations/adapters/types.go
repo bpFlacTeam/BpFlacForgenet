@@ -26,22 +26,23 @@ import (
 	"strconv"
 
 	"github.com/docker/docker/pkg/reexec"
-	"wodchain/crypto"
-	"wodchain/log"
-	"wodchain/node"
-	"wodchain/p2p"
-	"wodchain/p2p/enode"
-	"wodchain/p2p/enr"
-	"wodchain/rpc"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/log"
+	"github.com/wodTeam/Wod_Chain/node"
+	"github.com/wodTeam/Wod_Chain/p2p"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/p2p/enr"
+	"github.com/wodTeam/Wod_Chain/rpc"
 	"github.com/gorilla/websocket"
 )
 
 // Node represents a node in a simulation network which is created by a
 // NodeAdapter, for example:
 //
-//   - SimNode, an in-memory node in the same process
-//   - ExecNode, a child process node
-//   - DockerNode, a node running in a Docker container
+// * SimNode    - An in-memory node
+// * ExecNode   - A child process node
+// * DockerNode - A Docker container node
+//
 type Node interface {
 	// Addr returns the node's address (e.g. an Enode URL)
 	Addr() []byte

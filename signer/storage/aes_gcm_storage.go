@@ -24,7 +24,7 @@ import (
 	"io"
 	"os"
 
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 type storedCredential struct {

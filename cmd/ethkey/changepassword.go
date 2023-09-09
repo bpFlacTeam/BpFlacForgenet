@@ -21,8 +21,8 @@ import (
 	"os"
 	"strings"
 
-	"wodchain/accounts/keystore"
-	"wodchain/cmd/utils"
+	"github.com/wodTeam/Wod_Chain/accounts/keystore"
+	"github.com/wodTeam/Wod_Chain/cmd/utils"
 	"github.com/urfave/cli/v2"
 )
 

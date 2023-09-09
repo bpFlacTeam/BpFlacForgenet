@@ -21,10 +21,10 @@ import (
 	"errors"
 	"time"
 
-	"wodchain"
-	"wodchain/common"
-	"wodchain/core/types"
-	"wodchain/log"
+	"github.com/wodTeam/Wod_Chain"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/core/types"
+	"github.com/wodTeam/Wod_Chain/log"
 )
 
 // WaitMined waits for tx to be mined on the blockchain.

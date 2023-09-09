@@ -19,10 +19,10 @@ package ethtest
 import (
 	"time"
 
-	"wodchain/common"
-	"wodchain/eth/protocols/eth"
-	"wodchain/internal/utesting"
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/eth"
+	"github.com/wodTeam/Wod_Chain/internal/utesting"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 )
 
 // Suite represents a structure used to test a node's conformance
@@ -510,18 +510,17 @@ func (s *Suite) TestNewPooledTxs(t *utesting.T) {
 	}
 
 	// generate 50 txs
-	_, txs, err := generateTxs(s, 50)
+	hashMap, _, err := generateTxs(s, 50)
 	if err != nil {
 		t.Fatalf("failed to generate transactions: %v", err)
 	}
-	hashes := make([]common.Hash, len(txs))
-	types := make([]byte, len(txs))
-	sizes := make([]uint32, len(txs))
-	for i, tx := range txs {
-		hashes[i] = tx.Hash()
-		types[i] = tx.Type()
-		sizes[i] = uint32(tx.Size())
+
+	// create new pooled tx hashes announcement
+	hashes := make([]common.Hash, 0)
+	for _, hash := range hashMap {
+		hashes = append(hashes, hash)
 	}
+	announce := NewPooledTransactionHashes(hashes)
 
 	// send announcement
 	conn, err := s.dial()
@@ -532,13 +531,7 @@ func (s *Suite) TestNewPooledTxs(t *utesting.T) {
 	if err = conn.peer(s.chain, nil); err != nil {
 		t.Fatalf("peering failed: %v", err)
 	}
-
-	var ann Message = NewPooledTransactionHashes{Types: types, Sizes: sizes, Hashes: hashes}
-	if conn.negotiatedProtoVersion < eth.ETH68 {
-		ann = NewPooledTransactionHashes66(hashes)
-	}
-	err = conn.Write(ann)
-	if err != nil {
+	if err = conn.Write(announce); err != nil {
 		t.Fatalf("failed to write to connection: %v", err)
 	}
 
@@ -551,15 +544,9 @@ func (s *Suite) TestNewPooledTxs(t *utesting.T) {
 				t.Fatalf("unexpected number of txs requested: wanted %d, got %d", len(hashes), len(msg.GetPooledTransactionsPacket))
 			}
 			return
-
 		// ignore propagated txs from previous tests
-		case *NewPooledTransactionHashes66:
-			continue
 		case *NewPooledTransactionHashes:
 			continue
-		case *Transactions:
-			continue
-
 		// ignore block announcements from previous tests
 		case *NewBlockHashes:
 			continue

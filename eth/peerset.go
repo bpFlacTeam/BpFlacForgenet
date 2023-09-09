@@ -21,10 +21,10 @@ import (
 	"math/big"
 	"sync"
 
-	"wodchain/common"
-	"wodchain/eth/protocols/eth"
-	"wodchain/eth/protocols/snap"
-	"wodchain/p2p"
+	"github.com/wodTeam/Wod_Chain/common"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/eth"
+	"github.com/wodTeam/Wod_Chain/eth/protocols/snap"
+	"github.com/wodTeam/Wod_Chain/p2p"
 )
 
 var (

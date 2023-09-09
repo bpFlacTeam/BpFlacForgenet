@@ -22,9 +22,9 @@ import (
 	"net"
 	"time"
 
-	"wodchain/crypto"
-	"wodchain/p2p/discover/v4wire"
-	"wodchain/p2p/enode"
+	"github.com/wodTeam/Wod_Chain/crypto"
+	"github.com/wodTeam/Wod_Chain/p2p/discover/v4wire"
+	"github.com/wodTeam/Wod_Chain/p2p/enode"
 )
 
 const waitTime = 300 * time.Millisecond

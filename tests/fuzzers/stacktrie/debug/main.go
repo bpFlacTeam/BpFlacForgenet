@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"wodchain/tests/fuzzers/stacktrie"
+	"github.com/wodTeam/Wod_Chain/tests/fuzzers/stacktrie"
 )
 
 func main() {

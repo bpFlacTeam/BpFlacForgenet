@@ -17,7 +17,7 @@
 package state
 
 import (
-	"wodchain/common"
+	"github.com/wodTeam/Wod_Chain/common"
 )
 
 type accessList struct {

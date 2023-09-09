@@ -22,11 +22,10 @@ import (
 	"sort"
 	"time"
 
-	"wodchain/common/mclock"
-	"wodchain/core"
-	"wodchain/core/txpool"
-	"wodchain/ethdb"
-	"wodchain/light"
+	"github.com/wodTeam/Wod_Chain/common/mclock"
+	"github.com/wodTeam/Wod_Chain/core"
+	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/light"
 )
 
 // LesOdr implements light.OdrBackend
@@ -120,7 +119,7 @@ func (h peerByTxHistory) Less(i, j int) bool {
 func (h peerByTxHistory) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 
 const (
-	maxTxStatusRetry      = 3 // The maximum retries will be made for tx status request.
+	maxTxStatusRetry      = 3 // The maximum retrys will be made for tx status request.
 	maxTxStatusCandidates = 5 // The maximum les servers the tx status requests will be sent to.
 )
 
@@ -177,10 +176,10 @@ func (odr *LesOdr) RetrieveTxStatus(ctx context.Context, req *light.TxStatusRequ
 		// All the response is not verifiable, so always pick the first
 		// one we get.
 		for index, status := range req.Status {
-			if result[index].Status != txpool.TxStatusUnknown {
+			if result[index].Status != core.TxStatusUnknown {
 				continue
 			}
-			if status.Status == txpool.TxStatusUnknown {
+			if status.Status == core.TxStatusUnknown {
 				continue
 			}
 			result[index], missing = status, missing-1
