@@ -71,4 +71,4 @@ Use this genesis file.
 
 Forgenet connect only import the belivable nodes.To do our  AI transformer work to mine out.
 
-Need  least at  8 * A100 to  run as a  POC miner
+Need at  least  8 * A100 to  run as a  POC miner
