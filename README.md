@@ -2,7 +2,7 @@
 
 Official Golang implementation of the WodChain protocol.
 
-This project was forked from the  go-ethereum. And maked a lot of chanes  to work with wodchain.
+This project was forked from the  go-ethereum. And made a lot of chanes  to work with wodchain.
 
 And We are working on.
 
@@ -71,4 +71,4 @@ Use this genesis file.
 
 Forgenet connect only import the belivable nodes.To do our  AI transformer work to mine out.
 
-Need at  least  8 * A100 to  run as a  POC miner
+Need at least  8 * A100 to  run as a  POC miner
