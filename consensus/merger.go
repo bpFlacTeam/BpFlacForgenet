@@ -1,5 +1,5 @@
-// Copyright 2021 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2021 The go-ethereum Authors & The wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/wodTeam/Wod_Chain/core/rawdb"
-	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/woddb"
 	"github.com/wodTeam/Wod_Chain/log"
 	"github.com/wodTeam/Wod_Chain/rlp"
 )

@@ -1,5 +1,5 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2017 The go-ethereum Authors & The wodchain authors
+// This file is part of wodchain. Forked from the go-ethereum.
 //
 // go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ import (
 	"github.com/wodTeam/Wod_Chain/accounts/usbwallet"
 	"github.com/wodTeam/Wod_Chain/cmd/utils"
 	"github.com/wodTeam/Wod_Chain/core/rawdb"
-	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
+	"github.com/wodTeam/Wod_Chain/wod/ethconfig"
 	"github.com/wodTeam/Wod_Chain/internal/ethapi"
 	"github.com/wodTeam/Wod_Chain/internal/flags"
 	"github.com/wodTeam/Wod_Chain/log"

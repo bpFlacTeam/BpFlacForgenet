@@ -1,5 +1,6 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2015 The go-ethereum Authors & The wodchain authors
+//Copyright 2023 The Wodchain authors
+// This file is part of wodchain. Forked from the go-ethereum.
 //
 // go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,16 +43,16 @@ import (
 	"github.com/wodTeam/Wod_Chain/core/rawdb"
 	"github.com/wodTeam/Wod_Chain/core/vm"
 	"github.com/wodTeam/Wod_Chain/crypto"
-	"github.com/wodTeam/Wod_Chain/eth"
-	ethcatalyst "github.com/wodTeam/Wod_Chain/eth/catalyst"
-	"github.com/wodTeam/Wod_Chain/eth/downloader"
-	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
-	"github.com/wodTeam/Wod_Chain/eth/filters"
-	"github.com/wodTeam/Wod_Chain/eth/gasprice"
-	"github.com/wodTeam/Wod_Chain/eth/tracers"
-	"github.com/wodTeam/Wod_Chain/ethdb"
-	"github.com/wodTeam/Wod_Chain/ethdb/remotedb"
-	"github.com/wodTeam/Wod_Chain/ethstats"
+	"github.com/wodTeam/Wod_Chain/wod"
+	ethcatalyst "github.com/wodTeam/Wod_Chain/wod/catalyst"
+	"github.com/wodTeam/Wod_Chain/wod/downloader"
+	"github.com/wodTeam/Wod_Chain/wod/ethconfig"
+	"github.com/wodTeam/Wod_Chain/wod/filters"
+	"github.com/wodTeam/Wod_Chain/wod/gasprice"
+	"github.com/wodTeam/Wod_Chain/wod/tracers"
+	"github.com/wodTeam/Wod_Chain/woddb"
+	"github.com/wodTeam/Wod_Chain/woddb/remotedb"
+	"github.com/wodTeam/Wod_Chain/wodstats"
 	"github.com/wodTeam/Wod_Chain/graphql"
 	"github.com/wodTeam/Wod_Chain/internal/ethapi"
 	"github.com/wodTeam/Wod_Chain/internal/flags"

@@ -1,5 +1,5 @@
-// Copyright 2021 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2021 The go-ethereum Authors & The wodchain authors
+// This file is part of wodchain. Forked from the go-ethereum.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by

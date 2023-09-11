@@ -1,5 +1,5 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-ethereum Authors & The wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -25,9 +25,9 @@ import (
 	"github.com/wodTeam/Wod_Chain/core"
 	"github.com/wodTeam/Wod_Chain/core/rawdb"
 	"github.com/wodTeam/Wod_Chain/core/types"
-	"github.com/wodTeam/Wod_Chain/eth/ethconfig"
-	"github.com/wodTeam/Wod_Chain/ethclient"
-	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/wod/ethconfig"
+	"github.com/wodTeam/Wod_Chain/wodclient"
+	"github.com/wodTeam/Wod_Chain/woddb"
 	"github.com/wodTeam/Wod_Chain/les/checkpointoracle"
 	"github.com/wodTeam/Wod_Chain/light"
 	"github.com/wodTeam/Wod_Chain/log"

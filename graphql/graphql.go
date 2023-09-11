@@ -1,5 +1,5 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-ethereum Authors & The wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -32,7 +32,7 @@ import (
 	"github.com/wodTeam/Wod_Chain/consensus/misc"
 	"github.com/wodTeam/Wod_Chain/core/state"
 	"github.com/wodTeam/Wod_Chain/core/types"
-	"github.com/wodTeam/Wod_Chain/eth/filters"
+	"github.com/wodTeam/Wod_Chain/wod/filters"
 	"github.com/wodTeam/Wod_Chain/internal/ethapi"
 	"github.com/wodTeam/Wod_Chain/rlp"
 	"github.com/wodTeam/Wod_Chain/rpc"

@@ -1,5 +1,5 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2020 The go-ethereum Authors & The wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/wodTeam/Wod_Chain/common/mclock"
-	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/woddb"
 	"github.com/wodTeam/Wod_Chain/les/utils"
 	"github.com/wodTeam/Wod_Chain/p2p/enode"
 	"github.com/wodTeam/Wod_Chain/p2p/enr"

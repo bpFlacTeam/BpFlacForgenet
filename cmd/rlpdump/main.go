@@ -1,5 +1,6 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2015 The go-ethereum Authors & The wodchain authors
+//Copyright 2023 The Wodchain authors
+// This file is part of wodchain. Forked from the go-ethereum.
 //
 // go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

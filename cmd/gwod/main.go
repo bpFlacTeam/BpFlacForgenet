@@ -1,5 +1,5 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2014 The go-ethereum Authors & The wodchain authors
+// This file is part of wodchain. Forked from the go-ethereum.
 //
 // go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,9 +30,9 @@ import (
 	"github.com/wodTeam/Wod_Chain/cmd/utils"
 	"github.com/wodTeam/Wod_Chain/common"
 	"github.com/wodTeam/Wod_Chain/console/prompt"
-	"github.com/wodTeam/Wod_Chain/eth"
-	"github.com/wodTeam/Wod_Chain/eth/downloader"
-	"github.com/wodTeam/Wod_Chain/ethclient"
+	"github.com/wodTeam/Wod_Chain/wod"
+	"github.com/wodTeam/Wod_Chain/wod/downloader"
+	"github.com/wodTeam/Wod_Chain/wodclient"
 	"github.com/wodTeam/Wod_Chain/internal/debug"
 	"github.com/wodTeam/Wod_Chain/internal/ethapi"
 	"github.com/wodTeam/Wod_Chain/internal/flags"
@@ -41,8 +41,8 @@ import (
 	"github.com/wodTeam/Wod_Chain/node"
 
 	// Force-load the tracer engines to trigger registration
-	_ "github.com/wodTeam/Wod_Chain/eth/tracers/js"
-	_ "github.com/wodTeam/Wod_Chain/eth/tracers/native"
+	_ "github.com/wodTeam/Wod_Chain/wod/tracers/js"
+	_ "github.com/wodTeam/Wod_Chain/wod/tracers/native"
 
 	"github.com/urfave/cli/v2"
 )
@@ -209,7 +209,7 @@ func init() {
 	// Initialize the CLI app and start Geth
 	app.Action = geth
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2013-2022 The go-ethereum Authors"
+	app.Copyright = "Copyright 2013-2022 The go-ethereum Authors & The wodchain authors"
 	app.Commands = []*cli.Command{
 		// See chaincmd.go:
 		initCommand,

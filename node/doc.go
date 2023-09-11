@@ -1,5 +1,5 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-ethereum Authors & The wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -38,7 +38,7 @@ and CLOSED.
         Close()             RUNNING
             │                  │
             ▼                  │
-         CLOSED ◀──────Close()─┘
+         CLOSED ──────Close()─┘
 
 
 Creating a Node allocates basic resources such as the data directory and returns the node

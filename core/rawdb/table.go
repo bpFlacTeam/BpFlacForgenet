@@ -1,5 +1,5 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-ethereum Authors & The wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -17,7 +17,7 @@
 package rawdb
 
 import (
-	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/woddb"
 )
 
 // table is a wrapper around a database that prefixes each key access with a pre-

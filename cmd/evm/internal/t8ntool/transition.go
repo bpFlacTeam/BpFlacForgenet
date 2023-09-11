@@ -1,5 +1,5 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2020 The go-ethereum Authors & The wodchain authors
+// This file is part of wodchain. Forked from the go-ethereum.
 //
 // go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ import (
 	"github.com/wodTeam/Wod_Chain/core/types"
 	"github.com/wodTeam/Wod_Chain/core/vm"
 	"github.com/wodTeam/Wod_Chain/crypto"
-	"github.com/wodTeam/Wod_Chain/eth/tracers/logger"
+	"github.com/wodTeam/Wod_Chain/wod/tracers/logger"
 	"github.com/wodTeam/Wod_Chain/log"
 	"github.com/wodTeam/Wod_Chain/params"
 	"github.com/wodTeam/Wod_Chain/rlp"

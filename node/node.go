@@ -1,5 +1,6 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-ethereum Authors & The wodchain authors
+//Copyright 2023 The Wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +34,7 @@ import (
 	"github.com/wodTeam/Wod_Chain/common"
 	"github.com/wodTeam/Wod_Chain/common/hexutil"
 	"github.com/wodTeam/Wod_Chain/core/rawdb"
-	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/woddb"
 	"github.com/wodTeam/Wod_Chain/event"
 	"github.com/wodTeam/Wod_Chain/log"
 	"github.com/wodTeam/Wod_Chain/p2p"

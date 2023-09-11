@@ -1,5 +1,5 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2017 The go-ethereum Authors & The wodchain authors
+// This file is part of wodchain. Forked from the go-ethereum.
 //
 // go-ethereum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -366,7 +366,7 @@ try! node?.start();
 										<br/>
 										<p>Puppeth is distributed as part of the <a href="https://geth.ethereum.org/downloads/" target="about:blank">Geth &amp; Tools</a> bundles, but can also be installed separately via:<pre>go get github.com/wodTeam/Wod_Chain/cmd/puppeth</pre></p>
 										<br/>
-										<p><em>Copyright 2017. The go-ethereum Authors.</em></p>
+										<p><em>Copyright 2017. The go-ethereum Authors & The wodchain authors.</em></p>
 									</div>
 									<div style="display: inline-block; vertical-align: bottom; width: 217px;">
 										<img src="puppeth.png" style="height: 256px; margin: 16px 16px 16px 16px"></img>

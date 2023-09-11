@@ -1,5 +1,5 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-ethereum Authors & The wodchain authors
+// This file is part of the wodchain library. Forked from the  go-ethereum project
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -32,8 +32,8 @@ import (
 	"github.com/wodTeam/Wod_Chain/core/state"
 	"github.com/wodTeam/Wod_Chain/core/types"
 	"github.com/wodTeam/Wod_Chain/core/vm"
-	"github.com/wodTeam/Wod_Chain/eth/gasprice"
-	"github.com/wodTeam/Wod_Chain/ethdb"
+	"github.com/wodTeam/Wod_Chain/wod/gasprice"
+	"github.com/wodTeam/Wod_Chain/woddb"
 	"github.com/wodTeam/Wod_Chain/event"
 	"github.com/wodTeam/Wod_Chain/light"
 	"github.com/wodTeam/Wod_Chain/params"
