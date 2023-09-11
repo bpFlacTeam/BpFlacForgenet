@@ -2,6 +2,10 @@
 
 Official Golang implementation of the WodChain protocol.
 
+This project is fored from the  go-ethereum. And maked a lot of chanes  to work with wodchain.
+
+And We are working on.
+
 Automated builds are available for stable releases and the unstable master branch. Binary
 archives are published at https://www.wod.ai/download.
 
