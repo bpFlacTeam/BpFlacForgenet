@@ -2,7 +2,7 @@
 
 Official Golang implementation of the WodChain protocol.
 
-This project is forked from the  go-ethereum. And maked a lot of chanes  to work with wodchain.
+This project was forked from the  go-ethereum. And maked a lot of chanes  to work with wodchain.
 
 And We are working on.
 
