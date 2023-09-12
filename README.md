@@ -1,6 +1,6 @@
-## Wod Chain Project
+## BpFlac Project
 
-Official Golang implementation of the WodChain protocol.
+Official Golang implementation of the BpFlac Chain protocol.
 
 This project was forked from the  go-ethereum. And made a lot of changes  to work with wodchain.
 
@@ -24,9 +24,9 @@ go build
 
 ## Executables
 
-The gwod programe is Our main wodchain CLI client. It is the entry point into the wod network , capable of running as a full node (default), archive node (retaining all historical state) or a light node (retrieving data live).  
+The gwod programe is Our main BpFlac Chain CLI client. It is the entry point into the wod network , capable of running as a full node (default), archive node (retaining all historical state) or a light node (retrieving data live).  
 
-You can run it as a node to sync and query chain-data for the wodchain.
+You can run it as a node to sync and query chain-data for the BpFlac Chain.
  
  
 
